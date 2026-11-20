@@ -106,28 +106,72 @@ function addMessage(role,content){
  el.textContent=content;
  chatMessages.appendChild(el);chatMessages.scrollTop=chatMessages.scrollHeight;
 }
+let selectedJarvisVoice=null;
+const voiceSelect=document.getElementById("voice-select");
+const voiceStatus=document.getElementById("voice-status");
+const voicePreviewButton=document.getElementById("voice-preview-button");
+function loadJarvisVoices(){
+ if(!("speechSynthesis"in window)||!voiceSelect)return;
+ const voices=window.speechSynthesis.getVoices();
+ if(!voices.length){
+  voiceSelect.innerHTML="<option value=''>No voices reported yet — retrying...</option>";
+  if(voiceStatus)voiceStatus.textContent="WAITING FOR CHROME VOICE LIST";
+  return;
+ }
+ const previous=voiceSelect.value;
+ voiceSelect.innerHTML="";
+ voices.forEach((voice,index)=>{
+  const option=document.createElement("option");
+  option.value=String(index);
+  option.textContent=voice.name+" ("+voice.lang+")"+(voice.default?" — device default":"");
+  voiceSelect.appendChild(option);
+ });
+ const preferred=/Daniel|George|Ryan|Arthur|Oliver|Google UK English Male|Microsoft.*(UK|United Kingdom)/i;
+ const best=voices.findIndex(v=>/^en-GB/i.test(v.lang)&&preferred.test(v.name));
+ const british=voices.findIndex(v=>/^en-GB/i.test(v.lang));
+ const irish=voices.findIndex(v=>/^en-IE/i.test(v.lang));
+ const deviceDefault=voices.findIndex(v=>v.default);
+ const chosen=previous!==""&&voices[Number(previous)]?Number(previous):(best>=0?best:british>=0?british:irish>=0?irish:deviceDefault>=0?deviceDefault:0);
+ voiceSelect.value=String(chosen);
+ selectedJarvisVoice=voices[chosen];
+ if(voiceStatus)voiceStatus.textContent=selectedJarvisVoice.lang.startsWith("en-GB")?"BRITISH VOICE SELECTED // "+selectedJarvisVoice.name:"NO BRITISH VOICE FOUND // SELECT A VOICE ABOVE";
+}
+if("speechSynthesis"in window){
+ loadJarvisVoices();
+ window.speechSynthesis.addEventListener("voiceschanged",loadJarvisVoices);
+}
+if(voiceSelect)voiceSelect.addEventListener("change",()=>{
+ const voices=window.speechSynthesis.getVoices();
+ selectedJarvisVoice=voices[Number(voiceSelect.value)]||null;
+ if(voiceStatus)voiceStatus.textContent=selectedJarvisVoice?("SELECTED // "+selectedJarvisVoice.name+" ("+selectedJarvisVoice.lang+")"):"VOICE NOT AVAILABLE";
+});
 function speak(text){
  if(!voiceOutput||!("speechSynthesis"in window)||!text){setAvatarState("idle");return;}
  window.speechSynthesis.cancel();
  const utterance=new SpeechSynthesisUtterance(text);
- const availableVoices=window.speechSynthesis.getVoices();
- // Prefer a British English voice with a mature, measured delivery.
- // The exact voice depends on which voices the device/browser has installed.
- const preferredVoiceNames=/Daniel|George|Ryan|Arthur|Oliver|Google UK English Male|Microsoft.*(UK|United Kingdom)/i;
- const britishVoices=availableVoices.filter(voice=>/^en-GB/i.test(voice.lang));
- utterance.voice=britishVoices.find(voice=>preferredVoiceNames.test(voice.name))
-  ||britishVoices[0]
-  ||availableVoices.find(voice=>/^en-IE/i.test(voice.lang))
-  ||null;
- utterance.lang=utterance.voice?.lang||"en-GB";
- // Lower, slower and more cinematic — an original JARVIS-inspired delivery,
- // not an imitation of Paul Bettany's actual voice.
- utterance.rate=.88;utterance.pitch=.78;utterance.volume=1;
+ utterance.voice=selectedJarvisVoice;
+ utterance.lang=selectedJarvisVoice?.lang||"en-GB";
+ // Cinematic pacing and lower pitch; the actual voice is supplied by ChromeOS.
+ utterance.rate=.86;utterance.pitch=.78;utterance.volume=1;
  utterance.onstart=()=>setAvatarState("speaking");
  utterance.onend=()=>setAvatarState("idle");
  utterance.onerror=()=>setAvatarState("idle");
  window.speechSynthesis.speak(utterance);
 }
+function previewJarvisVoice(){
+ if(!("speechSynthesis"in window))return;
+ loadJarvisVoices();
+ window.speechSynthesis.cancel();
+ const utterance=new SpeechSynthesisUtterance("Good evening. All systems are operational. How may I assist you?");
+ utterance.voice=selectedJarvisVoice;
+ utterance.lang=selectedJarvisVoice?.lang||"en-GB";
+ utterance.rate=.86;utterance.pitch=.78;utterance.volume=1;
+ utterance.onstart=()=>setAvatarState("speaking");
+ utterance.onend=()=>setAvatarState("idle");
+ utterance.onerror=()=>setAvatarState("idle");
+ window.speechSynthesis.speak(utterance);
+}
+if(voicePreviewButton)voicePreviewButton.addEventListener("click",previewJarvisVoice);
 function parseSse(buffer){
  const normalized=buffer.replace(/\r/g,"");
  const parts=normalized.split("\n\n");
