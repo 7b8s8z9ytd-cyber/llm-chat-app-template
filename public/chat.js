@@ -7,6 +7,14 @@ const voiceButton=document.getElementById("voice-button");
 const speakButton=document.getElementById("speak-button");
 const coreStatus=document.getElementById("core-status");
 const aiStatus=document.getElementById("ai-status");
+const avatarStage=document.getElementById("avatar-stage");
+const avatarLabel=document.getElementById("avatar-label");
+function setAvatarState(state){
+ if(!avatarStage)return;
+ avatarStage.classList.remove("speaking","listening");
+ if(state==="speaking"||state==="listening")avatarStage.classList.add(state);
+ if(avatarLabel)avatarLabel.textContent=state==="speaking"?"J.A.R.V.I.S // SPEAKING":state==="listening"?"J.A.R.V.I.S // LISTENING":"STANDBY // HOLOGRAM STABLE";
+}
 const chatHistory=[{role:"assistant",content:"Good evening. J.A.R.V.I.S systems are online. How may I assist?"}];
 let isProcessing=false;
 let voiceOutput=true;
@@ -34,8 +42,8 @@ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition
 if(SpeechRecognition){
  recognition=new SpeechRecognition();
  recognition.lang="en-IE";recognition.interimResults=false;recognition.maxAlternatives=1;
- recognition.onstart=()=>{voiceButton.classList.add("active");coreStatus.textContent="LISTENING...";};
- recognition.onend=()=>{voiceButton.classList.remove("active");if(!isProcessing)coreStatus.textContent="AWAITING INSTRUCTIONS";};
+ recognition.onstart=()=>{voiceButton.classList.add("active");coreStatus.textContent="LISTENING...";setAvatarState("listening");};
+ recognition.onend=()=>{voiceButton.classList.remove("active");if(!isProcessing)coreStatus.textContent="AWAITING INSTRUCTIONS";setAvatarState("idle");};
  recognition.onerror=()=>{coreStatus.textContent="VOICE INPUT UNAVAILABLE";};
  recognition.onresult=e=>{userInput.value=e.results[0][0].transcript;sendMessage();};
  voiceButton.addEventListener("click",()=>{try{recognition.start();}catch(e){coreStatus.textContent="VOICE INPUT ACTIVE";}});
@@ -51,10 +59,13 @@ function addMessage(role,content){
  chatMessages.appendChild(el);chatMessages.scrollTop=chatMessages.scrollHeight;
 }
 function speak(text){
- if(!voiceOutput||!("speechSynthesis"in window)||!text)return;
+ if(!voiceOutput||!("speechSynthesis"in window)||!text){setAvatarState("idle");return;}
  window.speechSynthesis.cancel();
  const utterance=new SpeechSynthesisUtterance(text);
  utterance.rate=1;utterance.pitch=.92;utterance.volume=.9;
+ utterance.onstart=()=>setAvatarState("speaking");
+ utterance.onend=()=>setAvatarState("idle");
+ utterance.onerror=()=>setAvatarState("idle");
  window.speechSynthesis.speak(utterance);
 }
 function parseSse(buffer){
@@ -69,7 +80,7 @@ async function sendMessage(){
  if(!message||isProcessing)return;
  isProcessing=true;userInput.disabled=true;sendButton.disabled=true;
  addMessage("user",message);userInput.value="";userInput.style.height="auto";
- typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";
+ typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("idle");
  chatHistory.push({role:"user",content:message});
  let responseText="";
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
@@ -97,7 +108,7 @@ async function sendMessage(){
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
  }catch(error){
   console.error(error);responseEl.textContent="I couldn't reach the AI service. Please try again in a moment.";
-  coreStatus.textContent="CONNECTION ISSUE";aiStatus.textContent="CHECK AI CONNECTION";
+  coreStatus.textContent="CONNECTION ISSUE";aiStatus.textContent="CHECK AI CONNECTION";setAvatarState("idle");
  }finally{
   typingIndicator.classList.remove("visible");isProcessing=false;userInput.disabled=false;sendButton.disabled=false;userInput.focus();
  }
