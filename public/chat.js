@@ -19,6 +19,54 @@ const chatHistory=[{role:"assistant",content:"Good evening. J.A.R.V.I.S systems 
 let isProcessing=false;
 let voiceOutput=true;
 let recognition=null;
+const diagnosticsButton=document.getElementById("diagnostics-button");
+const diagnosticsResults=document.getElementById("diagnostics-results");
+const diagStatus=document.getElementById("diag-status");
+const diagSummary=document.getElementById("diag-summary");
+function browserName(){
+ const ua=navigator.userAgent;
+ if(ua.includes("Edg/"))return "Microsoft Edge";
+ if(ua.includes("Chrome/"))return "Chrome";
+ if(ua.includes("Firefox/"))return "Firefox";
+ if(ua.includes("Safari/"))return "Safari";
+ return "Browser";
+}
+async function runDiagnostics(){
+ if(diagnosticsButton)diagnosticsButton.disabled=true;
+ if(diagStatus)diagStatus.textContent="CHECKING...";
+ if(diagSummary)diagSummary.textContent="RUNNING SAFE, READ-ONLY TESTS";
+ if(diagnosticsResults)diagnosticsResults.textContent="Checking browser, network and JARVIS connection...";
+ const checks=[];
+ checks.push(["Browser",browserName()]);
+ checks.push(["Online status",navigator.onLine?"Online":"Offline"]);
+ checks.push(["Screen",window.screen.width+" × "+window.screen.height]);
+ checks.push(["CPU threads",navigator.hardwareConcurrency?navigator.hardwareConcurrency+" reported":"Not available"]);
+ checks.push(["Memory estimate",navigator.deviceMemory?navigator.deviceMemory+" GB (browser estimate)":"Not exposed by browser"]);
+ const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ checks.push(["Network type",connection?(connection.effectiveType||"Connected"):"Not exposed by browser"]);
+ if(connection&&Number.isFinite(connection.rtt))checks.push(["Network RTT estimate",connection.rtt+" ms"]);
+ try{
+  const start=performance.now();
+  const response=await fetch("/?jarvis-diagnostic="+Date.now(),{method:"GET",cache:"no-store"});
+  const elapsed=Math.round(performance.now()-start);
+  checks.push(["JARVIS server",response.ok?"Responding (HTTP "+response.status+")":"Returned HTTP "+response.status]);
+  checks.push(["Server response time",elapsed+" ms"]);
+ }catch(error){checks.push(["JARVIS server","Could not reach this site"]);}
+ if(navigator.getBattery){
+  try{const battery=await navigator.getBattery();checks.push(["Battery",Math.round(battery.level*100)+"%"+(battery.charging?" (charging)":"")]);}
+  catch(error){checks.push(["Battery","API unavailable"]);}
+ }else checks.push(["Battery","Not exposed by this browser"]);
+ const issues=[];
+ if(!navigator.onLine)issues.push("Chromebook reports that it is offline.");
+ if(checks.some(item=>item[0]==="JARVIS server"&&item[1]==="Could not reach this site"))issues.push("JARVIS server could not be reached.");
+ if(diagnosticsResults)diagnosticsResults.innerHTML=checks.map(item=>item[0]+": "+item[1]).join("<br>");
+ if(diagStatus)diagStatus.textContent=issues.length?"CHECK COMPLETE — ISSUE FOUND":"CHECK COMPLETE";
+ if(diagSummary)diagSummary.textContent=issues.length?issues.join(" "):"BROWSER AND CONNECTION CHECKS LOOK OK";
+ if(diagnosticsButton)diagnosticsButton.disabled=false;
+ return {checks,issues};
+}
+if(diagnosticsButton)diagnosticsButton.addEventListener("click",runDiagnostics);
+
 
 function updateClock(){
  const now=new Date();
@@ -78,6 +126,13 @@ function parseSse(buffer){
 async function sendMessage(){
  const message=userInput.value.trim();
  if(!message||isProcessing)return;
+ if(/\\b(run|start|do)\\s+(a\\s+)?(chromebook\\s+)?(system\\s+)?diagnostics?\\b|\\bcheck my chromebook\\b/i.test(message)){
+  addMessage("user",message);userInput.value="";userInput.style.height="auto";
+  addMessage("assistant","Certainly. I will run the safe browser and connection checks now. For deeper hardware tests, please use the ChromeOS Diagnostics app.");
+  const result=await runDiagnostics();
+  addMessage("assistant",result.issues.length?"The checks found: "+result.issues.join(" "):"The checks I can access look OK. This is not a full hardware test.");
+  return;
+ }
  isProcessing=true;userInput.disabled=true;sendButton.disabled=true;
  addMessage("user",message);userInput.value="";userInput.style.height="auto";
  typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("idle");
