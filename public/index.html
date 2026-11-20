@@ -57,6 +57,33 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 <footer>HOLOGRAPHIC INTERFACE // WORKERS AI CORE</footer>
 </section>
 <aside class="side">
+<section class="panel avatar-panel" id="avatar-panel">
+<h2>HOLOGRAPHIC AVATAR</h2>
+<div class="avatar-stage" id="avatar-stage">
+<div class="avatar-orbit orbit-a"></div><div class="avatar-orbit orbit-b"></div>
+<svg class="avatar-art" viewBox="0 0 260 300" role="img" aria-label="Blue holographic JARVIS head and shoulders">
+<defs>
+ <linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b8ffff"/><stop offset=".45" stop-color="#39cfff"/><stop offset="1" stop-color="#0875c8"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g fill="rgba(30,174,230,.08)" stroke="url(#holo)" stroke-width="2.2" filter="url(#glow)" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M130 24 C83 24 55 58 55 111 L55 145 C55 181 75 208 101 220 L101 239 C68 246 38 261 23 286 L237 286 C222 261 192 246 159 239 L159 220 C185 208 205 181 205 145 L205 111 C205 58 177 24 130 24Z"/>
+ <path d="M55 117 C43 112 37 124 42 145 C45 160 51 166 60 165 M205 117 C217 112 223 124 218 145 C215 160 209 166 200 165"/>
+ <path d="M83 107 Q104 92 119 106 M141 106 Q156 92 177 107" fill="none"/>
+ <path d="M91 124 Q104 117 116 124 M144 124 Q156 117 169 124" fill="none"/>
+ <path d="M130 120 L124 158 L135 163" fill="none"/>
+ <path class="avatar-mouth" d="M108 181 Q130 190 152 181" fill="none"/>
+ <path d="M102 220 L92 242 L130 260 L168 242 L158 220 M92 242 L78 286 M168 242 L182 286" fill="none"/>
+ <path d="M70 72 L91 56 L169 56 L190 72 M67 185 L83 205 M193 185 L177 205" fill="none" opacity=".7"/>
+</g>
+<g stroke="#79edff" stroke-width="1" opacity=".7"><path d="M70 137 H89 M171 137 H190 M130 33 V48 M130 266 V283"/></g>
+<g fill="#79edff"><circle cx="130" cy="18" r="3"/><circle cx="22" cy="286" r="3"/><circle cx="238" cy="286" r="3"/></g>
+</svg>
+<div class="avatar-scan"></div>
+<div class="avatar-label" id="avatar-label">STANDBY // HOLOGRAM STABLE</div>
+</div>
+<div class="small avatar-caption">J.A.R.V.I.S // AVATAR PROJECTION</div>
+</section>
 <section class="panel"><h2>NETWORK</h2><div class="metric">CONNECTED</div><div class="small">CLOUDFLARE WORKERS AI</div><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></section>
 <section class="panel"><h2>INTERFACE</h2><div class="metric">HUD ACTIVE</div><div class="small">VISUAL SYSTEMS NOMINAL</div></section>
 </aside>
