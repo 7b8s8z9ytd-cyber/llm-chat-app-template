@@ -110,7 +110,19 @@ function speak(text){
  if(!voiceOutput||!("speechSynthesis"in window)||!text){setAvatarState("idle");return;}
  window.speechSynthesis.cancel();
  const utterance=new SpeechSynthesisUtterance(text);
- utterance.rate=1;utterance.pitch=.92;utterance.volume=.9;
+ const availableVoices=window.speechSynthesis.getVoices();
+ // Prefer a British English voice with a mature, measured delivery.
+ // The exact voice depends on which voices the device/browser has installed.
+ const preferredVoiceNames=/Daniel|George|Ryan|Arthur|Oliver|Google UK English Male|Microsoft.*(UK|United Kingdom)/i;
+ const britishVoices=availableVoices.filter(voice=>/^en-GB/i.test(voice.lang));
+ utterance.voice=britishVoices.find(voice=>preferredVoiceNames.test(voice.name))
+  ||britishVoices[0]
+  ||availableVoices.find(voice=>/^en-IE/i.test(voice.lang))
+  ||null;
+ utterance.lang=utterance.voice?.lang||"en-GB";
+ // Lower, slower and more cinematic — an original JARVIS-inspired delivery,
+ // not an imitation of Paul Bettany's actual voice.
+ utterance.rate=.88;utterance.pitch=.78;utterance.volume=1;
  utterance.onstart=()=>setAvatarState("speaking");
  utterance.onend=()=>setAvatarState("idle");
  utterance.onerror=()=>setAvatarState("idle");
