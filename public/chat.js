@@ -11,9 +11,9 @@ const avatarStage=document.getElementById("avatar-stage");
 const avatarLabel=document.getElementById("avatar-label");
 function setAvatarState(state){
  if(!avatarStage)return;
- avatarStage.classList.remove("speaking","listening");
- if(state==="speaking"||state==="listening")avatarStage.classList.add(state);
- if(avatarLabel)avatarLabel.textContent=state==="speaking"?"J.A.R.V.I.S // SPEAKING":state==="listening"?"J.A.R.V.I.S // LISTENING":"STANDBY // HOLOGRAM STABLE";
+ avatarStage.classList.remove("speaking","listening","thinking");
+ if(["speaking","listening","thinking"].includes(state))avatarStage.classList.add(state);
+ if(avatarLabel)avatarLabel.textContent=state==="speaking"?"J.A.R.V.I.S // SPEAKING":state==="listening"?"J.A.R.V.I.S // LISTENING":state==="thinking"?"J.A.R.V.I.S // PROCESSING":"STANDBY // HOLOGRAM STABLE";
 }
 const CHAT_STORAGE_KEY="jarvis-chat-history-v1";
 const SESSIONS_STORAGE_KEY="jarvis-sessions-v1";
@@ -316,7 +316,7 @@ async function sendMessage(){
  }
  isProcessing=true;userInput.disabled=true;sendButton.disabled=true;
  addMessage("user",message);userInput.value="";userInput.style.height="auto";
- typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("idle");
+ typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("thinking");
  chatHistory.push({role:"user",content:message});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();renderSessionHistory();
  let responseText="";
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
