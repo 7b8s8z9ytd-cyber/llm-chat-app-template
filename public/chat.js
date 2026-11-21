@@ -15,7 +15,18 @@ function setAvatarState(state){
  if(state==="speaking"||state==="listening")avatarStage.classList.add(state);
  if(avatarLabel)avatarLabel.textContent=state==="speaking"?"J.A.R.V.I.S // SPEAKING":state==="listening"?"J.A.R.V.I.S // LISTENING":"STANDBY // HOLOGRAM STABLE";
 }
-const chatHistory=[{role:"assistant",content:"Good evening. J.A.R.V.I.S systems are online. How may I assist?"}];
+const CHAT_STORAGE_KEY="jarvis-chat-history-v1";
+const DEFAULT_GREETING={role:"assistant",content:"Good evening. J.A.R.V.I.S systems are online. How may I assist?"};
+function loadSavedChat(){
+ try{const saved=JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)||"[]");if(Array.isArray(saved)){const valid=saved.filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").slice(-24);if(valid.length)return valid;}}
+ catch(error){console.warn("Local chat history unavailable",error);}
+ return [DEFAULT_GREETING];
+}
+const chatHistory=loadSavedChat();
+function saveChatHistory(){
+ try{localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(chatHistory.slice(-24)));}
+ catch(error){const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // STORAGE UNAVAILABLE";}
+}
 let isProcessing=false;
 let voiceOutput=true;
 let recognition=null;
@@ -106,6 +117,20 @@ function addMessage(role,content){
  el.textContent=content;
  chatMessages.appendChild(el);chatMessages.scrollTop=chatMessages.scrollHeight;
 }
+if(chatHistory.length>1){chatMessages.innerHTML="";chatHistory.forEach(message=>addMessage(message.role,message.content));}
+saveChatHistory();
+const newChatButton=document.getElementById("new-chat-button");
+if(newChatButton)newChatButton.addEventListener("click",()=>{
+ if(!confirm("Start a new JARVIS conversation? This clears the saved conversation on this browser."))return;
+ chatHistory.splice(0,chatHistory.length,DEFAULT_GREETING);
+ chatMessages.innerHTML="";addMessage("assistant",DEFAULT_GREETING.content);saveChatHistory();
+ coreStatus.textContent="NEW SESSION READY";
+});
+const capabilitiesButton=document.getElementById("capabilities-button");
+if(capabilitiesButton)capabilitiesButton.addEventListener("click",()=>{
+ userInput.value="What can you do? Explain your capabilities and limitations.";sendMessage();
+});
+
 let selectedJarvisVoice=null;
 const voiceSelect=document.getElementById("voice-select");
 const voiceStatus=document.getElementById("voice-status");
@@ -245,7 +270,7 @@ async function sendMessage(){
  isProcessing=true;userInput.disabled=true;sendButton.disabled=true;
  addMessage("user",message);userInput.value="";userInput.style.height="auto";
  typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("idle");
- chatHistory.push({role:"user",content:message});
+ chatHistory.push({role:"user",content:message});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();
  let responseText="";
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
  try{
@@ -268,7 +293,7 @@ async function sendMessage(){
    }
   }
   if(!responseText)throw new Error("The AI returned an empty response");
-  chatHistory.push({role:"assistant",content:responseText});speak(responseText);
+  chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();speak(responseText);
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
  }catch(error){
   console.error(error);responseEl.textContent="I couldn't reach the AI service. Please try again in a moment.";
