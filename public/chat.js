@@ -617,3 +617,91 @@ backupFile?.addEventListener("change",async()=>{
   updateReminderStatus("BACKUP IMPORTED // MERGED WITHOUT REPLACING CURRENT DATA. REOPEN A SESSION FROM HISTORY.");
  }catch(error){updateReminderStatus("BACKUP IMPORT FAILED: "+(error.message||"INVALID FILE"));}
 });
+
+
+// PLUMBING BUSINESS MODE // customer and job records kept separately from chat history.
+const BUSINESS_STORAGE_KEY="jarvis-plumbing-business-v1";
+const businessStatus=document.getElementById("biz-status");
+let plumbingData={customers:[],jobs:[]};
+try{
+ const savedBusiness=JSON.parse(localStorage.getItem(BUSINESS_STORAGE_KEY)||"null");
+ if(savedBusiness&&typeof savedBusiness==="object"){
+  plumbingData.customers=Array.isArray(savedBusiness.customers)?savedBusiness.customers.slice(0,300):[];
+  plumbingData.jobs=Array.isArray(savedBusiness.jobs)?savedBusiness.jobs.slice(0,500):[];
+ }
+}catch(error){if(businessStatus)businessStatus.textContent="BUSINESS STORAGE COULD NOT BE READ.";}
+function savePlumbingData(){
+ try{
+  localStorage.setItem(BUSINESS_STORAGE_KEY,JSON.stringify(plumbingData));
+  if(businessStatus)businessStatus.textContent="BUSINESS RECORDS SAVED LOCALLY // "+plumbingData.customers.length+" CUSTOMERS // "+plumbingData.jobs.length+" JOBS";
+ }catch(error){if(businessStatus)businessStatus.textContent="STORAGE UNAVAILABLE OR FULL. EXPORT/BACK UP YOUR DATA BEFORE CLEARING BROWSER DATA.";}
+}
+function businessRow(container,text,onRemove){
+ if(!container)return;
+ const row=document.createElement("div");row.className="workshop-item";
+ const label=document.createElement("span");label.textContent=text;row.appendChild(label);
+ const remove=document.createElement("button");remove.type="button";remove.textContent="REMOVE";
+ remove.addEventListener("click",onRemove);row.appendChild(remove);container.appendChild(row);
+}
+function renderPlumbingBusiness(){
+ const customerList=document.getElementById("biz-customer-list");
+ const jobList=document.getElementById("biz-job-list");
+ if(customerList){
+  customerList.replaceChildren();
+  if(!plumbingData.customers.length){const empty=document.createElement("div");empty.className="workshop-empty";empty.textContent="No customers saved yet.";customerList.appendChild(empty);}
+  plumbingData.customers.forEach(customer=>businessRow(customerList,customer.name+(customer.phone?" · "+customer.phone:"")+(customer.address?" · "+customer.address:""),()=>{
+   plumbingData.customers=plumbingData.customers.filter(item=>item.id!==customer.id);savePlumbingData();renderPlumbingBusiness();
+  }));
+ }
+ if(jobList){
+  jobList.replaceChildren();
+  if(!plumbingData.jobs.length){const empty=document.createElement("div");empty.className="workshop-empty";empty.textContent="No jobs recorded yet.";jobList.appendChild(empty);}
+  plumbingData.jobs.forEach(job=>{
+   const row=document.createElement("div");row.className="workshop-item";
+   const details=document.createElement("span");details.textContent=job.title+" · "+job.customer+" · "+(job.date||"Date not set");row.appendChild(details);
+   const statusSelect=document.createElement("select");statusSelect.className="control";
+   ["Enquiry","Quote needed","Booked","In progress","Completed","Invoiced"].forEach(status=>{const option=document.createElement("option");option.value=status;option.textContent=status;statusSelect.appendChild(option);});
+   statusSelect.value=job.status;statusSelect.setAttribute("aria-label","Status for "+job.title);
+   statusSelect.addEventListener("change",()=>{job.status=statusSelect.value;savePlumbingData();});
+   row.appendChild(statusSelect);
+   const remove=document.createElement("button");remove.type="button";remove.textContent="REMOVE";remove.addEventListener("click",()=>{plumbingData.jobs=plumbingData.jobs.filter(item=>item.id!==job.id);savePlumbingData();renderPlumbingBusiness();});row.appendChild(remove);
+   jobList.appendChild(row);
+  });
+ }
+}
+document.getElementById("biz-add-customer")?.addEventListener("click",()=>{
+ const name=document.getElementById("biz-customer-name")?.value.trim();
+ const phone=document.getElementById("biz-customer-phone")?.value.trim()||"";
+ const address=document.getElementById("biz-customer-address")?.value.trim()||"";
+ if(!name){if(businessStatus)businessStatus.textContent="ENTER A CUSTOMER NAME FIRST.";return;}
+ plumbingData.customers.unshift({id:"customer-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),name:name.slice(0,90),phone:phone.slice(0,35),address:address.slice(0,160),createdAt:Date.now()});
+ ["biz-customer-name","biz-customer-phone","biz-customer-address"].forEach(id=>{const field=document.getElementById(id);if(field)field.value="";});
+ savePlumbingData();renderPlumbingBusiness();
+});
+document.getElementById("biz-add-job")?.addEventListener("click",()=>{
+ const title=document.getElementById("biz-job-title")?.value.trim();
+ const customer=document.getElementById("biz-job-customer")?.value.trim();
+ const date=document.getElementById("biz-job-date")?.value||"";
+ const status=document.getElementById("biz-job-status")?.value||"Enquiry";
+ if(!title||!customer){if(businessStatus)businessStatus.textContent="ENTER BOTH A JOB DESCRIPTION AND CUSTOMER NAME.";return;}
+ plumbingData.jobs.unshift({id:"job-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),title:title.slice(0,100),customer:customer.slice(0,90),date,status,createdAt:Date.now()});
+ ["biz-job-title","biz-job-customer","biz-job-date"].forEach(id=>{const field=document.getElementById(id);if(field)field.value="";});
+ savePlumbingData();renderPlumbingBusiness();
+});
+document.getElementById("biz-make-quote")?.addEventListener("click",()=>{
+ const customer=document.getElementById("biz-quote-customer")?.value.trim()||"Customer";
+ const description=document.getElementById("biz-quote-description")?.value.trim()||"Work description to be confirmed";
+ const labour=Number(document.getElementById("biz-quote-labour")?.value);
+ const materials=Number(document.getElementById("biz-quote-materials")?.value);
+ const vat=Number(document.getElementById("biz-quote-vat")?.value);
+ const output=document.getElementById("biz-quote-total");
+ if(!Number.isFinite(labour)||!Number.isFinite(materials)||!Number.isFinite(vat)||labour<0||materials<0||vat<0||vat>100){
+  if(output)output.textContent="Please enter valid non-negative amounts and a VAT percentage between 0 and 100.";return;
+ }
+ const subtotal=labour+materials,vatAmount=subtotal*vat/100,total=subtotal+vatAmount;
+ const euro=value=>new Intl.NumberFormat("en-IE",{style:"currency",currency:"EUR"}).format(value);
+ const lines=["PLUMBING WORK — QUOTATION DRAFT","Customer: "+customer,"Description: "+description,"Labour: "+euro(labour),"Materials: "+euro(materials),"Subtotal: "+euro(subtotal),"VAT ("+vat+"%): "+euro(vatAmount),"TOTAL: "+euro(total),"","DRAFT ONLY — confirm scope, pricing, VAT treatment, terms and business details before sending."];
+ if(output){output.replaceChildren();const pre=document.createElement("pre");pre.style.whiteSpace="pre-wrap";pre.style.fontFamily="inherit";pre.textContent=lines.join("\n");output.appendChild(pre);}
+ if(businessStatus)businessStatus.textContent="QUOTE DRAFT CALCULATED // CHECK VAT AND ALL DETAILS BEFORE USE.";
+});
+renderPlumbingBusiness();
