@@ -131,13 +131,23 @@ async function handleChatRequest(
 			output_text?: unknown;
 		};
 		const choiceContent = aiResult.choices?.[0]?.message?.content;
-		const responseText = typeof aiResult.response === "string"
-			? aiResult.response
-			: typeof choiceContent === "string"
-				? choiceContent
-				: Array.isArray(choiceContent)
-					? choiceContent.map((part) => part && typeof part === "object" && "text" in part && typeof part.text === "string" ? part.text : "").join("")
-					: typeof aiResult.output_text === "string" ? aiResult.output_text : "";
+		// Workers AI models can expose generated text in different fields.
+		// Prefer the first non-empty value so an empty field cannot hide a valid answer.
+		const extractText = (value: unknown): string => {
+			if (typeof value === "string") return value.trim();
+			if (Array.isArray(value)) {
+				return value.map((part) => {
+					if (typeof part === "string") return part;
+					if (part && typeof part === "object" && "text" in part && typeof part.text === "string") return part.text;
+					return "";
+				}).join("").trim();
+			}
+			if (value && typeof value === "object" && "text" in value && typeof value.text === "string") return value.text.trim();
+			return "";
+		};
+		const responseText = [aiResult.response, choiceContent, aiResult.output_text]
+			.map(extractText)
+			.find((candidate) => candidate.length > 0) ?? "";
 		if (!responseText.trim()) {
 			const diagnostic = {
 				resultKeys: Object.keys(result as Record<string, unknown>),
