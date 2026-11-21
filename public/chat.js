@@ -183,11 +183,11 @@ function parseBrowserCommand(text){
  const q=text.trim();
  let m;
  if(/^(browser help|help with browser control)$/i.test(q))return {action:"help"};
- if(/^(open|go to|navigate to)\\s+(.+)$/i.test(q)){let target=q.replace(/^(open|go to|navigate to)\\s+/i,"").trim();return {action:"open",args:{url:target}};}
- if(/^(search (google for|the web for)|google)\\s+(.+)$/i.test(q)){return {action:"search",args:{query:q.replace(/^(search (google for|the web for)|google)\\s+/i,"").trim()}};}
+ if(/^(open|go to|navigate to)\s+(.+)$/i.test(q)){let target=q.replace(/^(open|go to|navigate to)\s+/i,"").trim();return {action:"open",args:{url:target}};}
+ if(/^(search (google for|the web for)|google)\s+(.+)$/i.test(q)){return {action:"search",args:{query:q.replace(/^(search (google for|the web for)|google)\s+/i,"").trim()}};}
  if(/^(new tab|open a new tab)$/i.test(q))return {action:"new_tab"};
  if(/^(close (this |the )?tab|close current tab)$/i.test(q))return {action:"close_tab"};
- if((m=q.match(/^(switch to )?tab (\\d+)$/i)))return {action:"switch_tab",args:{index:Number(m[2])}};
+ if((m=q.match(/^(switch to )?tab (\d+)$/i)))return {action:"switch_tab",args:{index:Number(m[2])}};
  if(/^(go )?back$/i.test(q))return {action:"back"};
  if(/^(go )?forward$/i.test(q))return {action:"forward"};
  if(/^(read (this |the )?page|summarise this page|summarize this page)$/i.test(q))return {action:"read"};
@@ -233,7 +233,7 @@ async function sendMessage(){
  if(!message||isProcessing)return;
  const browserCommand=parseBrowserCommand(message);
  if(browserCommand){isProcessing=true;userInput.disabled=true;sendButton.disabled=true;userInput.value="";userInput.style.height="auto";try{await handleBrowserCommand(browserCommand,message);}finally{isProcessing=false;userInput.disabled=false;sendButton.disabled=false;userInput.focus();}return;}
- if(/\\b(run|start|do)\\s+(a\\s+)?(chromebook\\s+)?(system\\s+)?diagnostics?\\b|\\bcheck my chromebook\\b/i.test(message)){
+ if(/\b(run|start|do)\s+(a\s+)?(chromebook\s+)?(system\s+)?diagnostics?\b|\bcheck my chromebook\b/i.test(message)){
   addMessage("user",message);userInput.value="";userInput.style.height="auto";
   addMessage("assistant","Certainly. I will run the safe browser and connection checks now. For deeper hardware tests, please use the ChromeOS Diagnostics app.");
   const result=await runDiagnostics();
