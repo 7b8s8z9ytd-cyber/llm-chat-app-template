@@ -385,3 +385,56 @@ async function sendMessage(){
   typingIndicator.classList.remove("visible");isProcessing=false;userInput.disabled=false;sendButton.disabled=false;userInput.focus();
  }
 }
+
+
+/* JARVIS 3.0 live information centre */
+const infoClock=document.getElementById("info-clock");
+const infoDate=document.getElementById("info-date");
+function updateInfoClock(){
+ if(!infoClock||!infoDate)return;
+ const now=new Date();
+ infoClock.textContent=now.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ infoDate.textContent=now.toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+}
+updateInfoClock();
+setInterval(updateInfoClock,1000);
+
+const weatherCityInput=document.getElementById("weather-city");
+const weatherSearchButton=document.getElementById("weather-search");
+const weatherResult=document.getElementById("weather-result");
+function weatherDescription(code){
+ const descriptions={0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Depositing rime fog",51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",56:"Freezing drizzle",57:"Dense freezing drizzle",61:"Slight rain",63:"Moderate rain",65:"Heavy rain",66:"Freezing rain",67:"Heavy freezing rain",71:"Slight snow",73:"Moderate snow",75:"Heavy snow",77:"Snow grains",80:"Rain showers",81:"Moderate rain showers",82:"Violent rain showers",85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm with hail",99:"Thunderstorm with heavy hail"};
+ return descriptions[code]||"Conditions unavailable";
+}
+async function loadWeather(){
+ const city=weatherCityInput?.value.trim();
+ if(!city||!weatherResult||!weatherSearchButton)return;
+ weatherSearchButton.disabled=true;weatherResult.textContent="Contacting weather service...";
+ try{
+  const geoUrl="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(city)+"&count=1&language=en&format=json";
+  const geoResponse=await fetch(geoUrl);
+  if(!geoResponse.ok)throw new Error("Location lookup unavailable (HTTP "+geoResponse.status+").");
+  const geo=await geoResponse.json();
+  const place=geo.results&&geo.results[0];
+  if(!place)throw new Error("I couldn't find that town or city. Try a nearby larger place.");
+  const forecastUrl="https://api.open-meteo.com/v1/forecast?latitude="+encodeURIComponent(place.latitude)+"&longitude="+encodeURIComponent(place.longitude)+"&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto";
+  const forecastResponse=await fetch(forecastUrl);
+  if(!forecastResponse.ok)throw new Error("Weather service unavailable (HTTP "+forecastResponse.status+").");
+  const forecast=await forecastResponse.json();
+  const current=forecast.current||{},daily=forecast.daily||{};
+  const temperature=Number.isFinite(current.temperature_2m)?Math.round(current.temperature_2m)+"°C":"—";
+  const feels=Number.isFinite(current.apparent_temperature)?Math.round(current.apparent_temperature)+"°C":"—";
+  const humidity=Number.isFinite(current.relative_humidity_2m)?current.relative_humidity_2m+"%":"—";
+  const wind=Number.isFinite(current.wind_speed_10m)?Math.round(current.wind_speed_10m)+" km/h":"—";
+  const high=daily.temperature_2m_max?.[0],low=daily.temperature_2m_min?.[0];
+  const placeName=[place.name,place.admin1,place.country].filter(Boolean).join(", ");
+  weatherResult.textContent=placeName+" — "+weatherDescription(current.weather_code)+". Now "+temperature+"; feels like "+feels+". Today's high "+(Number.isFinite(high)?Math.round(high)+"°C":"—")+" / low "+(Number.isFinite(low)?Math.round(low)+"°C":"—")+". Humidity "+humidity+". Wind "+wind+".";
+ }catch(error){weatherResult.textContent="Weather unavailable: "+(error&&error.message?error.message:"Please try again.");}
+ finally{weatherSearchButton.disabled=false;}
+}
+if(weatherSearchButton)weatherSearchButton.addEventListener("click",loadWeather);
+if(weatherCityInput)weatherCityInput.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();loadWeather();}});
+document.querySelectorAll("[data-info-url]").forEach(button=>button.addEventListener("click",()=>{
+ const url=button.getAttribute("data-info-url");
+ if(url)window.open(url,"_blank","noopener,noreferrer");
+}));
