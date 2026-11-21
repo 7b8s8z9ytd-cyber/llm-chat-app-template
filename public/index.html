@@ -106,7 +106,7 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 <div class="controls"><button class="control" id="voice-button">◉ VOICE INPUT</button><button class="control" id="wake-button" title="Enable browser wake phrase detection">HEY JARVIS: OFF</button><button class="control" id="speak-button">♫ VOICE OUTPUT: ON</button></div>
 <div class="controls" style="margin-top:10px;max-width:100%;width:100%"><select id="voice-select" aria-label="Choose JARVIS voice" class="control" style="max-width:75%;text-transform:none;letter-spacing:.5px"><option>Loading available voices...</option></select><button class="control" id="voice-preview-button">TEST VOICE</button></div>
 <div class="small" id="voice-status" style="text-align:center;margin-top:7px">VOICE PROFILE // CINEMATIC BRITISH</div>
-<section class="panel session-history-panel" aria-label="Saved chat sessions"><h2>SESSION HISTORY</h2><div class="small" style="margin-bottom:9px">SAVED ON THIS CHROMEBOOK</div><div id="session-history-list" class="history-list"><div class="history-empty">Loading saved sessions...</div></div></section>
+<section class="panel session-history-panel" aria-label="Saved chat sessions"><h2>SESSION HISTORY</h2><div class="small" style="margin-bottom:9px">SAVED ON THIS CHROMEBOOK</div><input id="session-search" class="control" type="search" maxlength="60" placeholder="Search saved sessions..." aria-label="Search saved sessions" style="width:100%;text-align:left;text-transform:none;letter-spacing:0;margin-bottom:8px"><div id="session-history-list" class="history-list"><div class="history-empty">Loading saved sessions...</div></div></section>
 <section class="panel" style="width:min(100%,610px);margin-top:14px">
 <h2>BROWSER QUICK ACCESS // WEB MODE</h2>
 <div class="controls" style="justify-content:flex-start">
@@ -173,7 +173,7 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
   <button class="control" type="button" id="security-check">CHECK DASHBOARD SECURITY</button>
  </div>
  <div id="security-result" class="small" style="line-height:1.7;margin-top:8px">SECURITY MONITOR // READY</div>
- <div class="backup-row"><button class="control" id="enable-reminders" type="button">ENABLE REMINDERS</button><button class="control" id="export-backup" type="button">EXPORT JARVIS BACKUP</button><button class="control" id="install-app" type="button" hidden>INSTALL JARVIS APP</button></div>
+ <div class="backup-row"><button class="control" id="enable-reminders" type="button">ENABLE REMINDERS</button><button class="control" id="export-backup" type="button">EXPORT JARVIS BACKUP</button><button class="control" id="import-backup" type="button">IMPORT BACKUP</button><input id="backup-file" type="file" accept="application/json,.json" hidden><button class="control" id="install-app" type="button" hidden>INSTALL JARVIS APP</button></div>
  <div id="planner-status" class="planner-status" aria-live="polite">REMINDERS // OFF. Reminders are checked while this dashboard is open.</div>
 </section>
 <section class="panel" id="blueprint-panel" style="width:min(100%,610px);margin-top:14px;display:none"><h2>J.A.R.V.I.S // PROJECT BLUEPRINT</h2><div id="blueprint-content"></div></section><div class="chat">
