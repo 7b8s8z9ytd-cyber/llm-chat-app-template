@@ -120,6 +120,9 @@ async function handleChatRequest(
 			{
 				messages,
 				max_tokens: 640,
+				// Gemma 4 enables reasoning by default; disable it so the
+				// response budget is used for the user-facing answer.
+				chat_template_kwargs: { enable_thinking: false },
 			},
 		);
 		const responseText = typeof result.response === "string"
@@ -137,10 +140,11 @@ async function handleChatRequest(
 		});
 	} catch (error) {
 		console.error("Error processing chat request:", error);
+		const detail = error instanceof Error ? error.message : String(error);
 		return new Response(
-			JSON.stringify({ error: "Failed to process request" }),
+			JSON.stringify({ error: "Workers AI request failed: " + detail.slice(0, 500) }),
 			{
-				status: 500,
+				status: 502,
 				headers: { "content-type": "application/json" },
 			},
 		);
