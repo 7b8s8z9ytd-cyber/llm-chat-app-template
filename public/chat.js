@@ -41,6 +41,7 @@ function saveChatHistory(){
   scheduleCloudSync();
  }catch(error){const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // STORAGE UNAVAILABLE";}
 }
+let syncReady=false;
 let isProcessing=false;
 let voiceOutput=true;
 let recognition=null;
@@ -713,7 +714,7 @@ async function syncNow() {
  } finally {syncInProgress=false;}
 }
 function scheduleCloudSync() {
- if(!localStorage.getItem(SYNC_CODE_KEY)||syncInProgress)return;
+ if(!syncReady||!localStorage.getItem(SYNC_CODE_KEY)||syncInProgress)return;
  clearTimeout(syncTimer);
  syncTimer=setTimeout(()=>{if(syncPassInput?.value)syncNow();else setSyncStatus("CHANGES SAVED ON THIS DEVICE. ENTER PASSPHRASE AND TAP SYNC NOW TO UPLOAD.");},1800);
 }
@@ -730,6 +731,7 @@ document.getElementById("sync-disconnect")?.addEventListener("click",()=>{
  localStorage.removeItem(SYNC_CODE_KEY);if(syncCodeInput)syncCodeInput.value="";if(syncPassInput)syncPassInput.value="";
  setSyncStatus("DISCONNECTED. CLOUD COPY IS NOT DELETED.");
 });
+syncReady=true;
 
 const BUSINESS_STORAGE_KEY="jarvis-plumbing-business-v1";
 const businessStatus=document.getElementById("biz-status");
