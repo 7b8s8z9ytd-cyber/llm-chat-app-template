@@ -500,3 +500,19 @@ document.getElementById("security-check")?.addEventListener("click",()=>{
  ];
  result.textContent=checks.join(" // ");
 });
+
+/* Simple browser-based 3D concept preview */
+const modelShape=document.getElementById("model-shape");
+const modelRotation=document.getElementById("model-rotation");
+const conceptModel=document.getElementById("concept-model");
+const modelCaption=document.getElementById("model-caption");
+function updateConceptModel(){
+ if(!conceptModel||!modelShape||!modelRotation)return;
+ const shape=modelShape.value;
+ conceptModel.className="concept-model "+shape;
+ conceptModel.style.transform="rotateX(-20deg) rotateY("+Number(modelRotation.value)+"deg)";
+ if(modelCaption)modelCaption.textContent=shape.toUpperCase()+" // ROTATABLE CONCEPT VIEW";
+}
+modelShape?.addEventListener("change",updateConceptModel);
+modelRotation?.addEventListener("input",updateConceptModel);
+updateConceptModel();
