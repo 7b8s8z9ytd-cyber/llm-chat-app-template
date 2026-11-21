@@ -304,24 +304,13 @@ async function sendMessage(){
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
  try{
   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:chatHistory.slice(-12)})});
-  if(!response.ok){ let detail="HTTP "+response.status; try{const problem=await response.json();if(problem&&typeof problem.error==="string")detail+=" — "+problem.error;}catch(error){} throw new Error(detail); }
-  if(!response.body)throw new Error("No response stream");
-  const reader=response.body.getReader();const decoder=new TextDecoder();let buffer="";let finished=false;
-  while(!finished){
-   const {done,value}=await reader.read();
-   if(done){buffer+="\n\n";finished=true;}
-   else buffer+=decoder.decode(value,{stream:true});
-   const parsed=parseSse(buffer);buffer=parsed.buffer;
-   for(const data of parsed.events){
-    if(data==="[DONE]"){finished=true;break;}
-    try{
-     const item=JSON.parse(data);
-     const chunk=typeof item.response==="string"?item.response:(item.choices?.[0]?.delta?.content||"");
-     if(chunk){responseText+=chunk;responseEl.textContent=responseText;chatMessages.scrollTop=chatMessages.scrollHeight;}
-    }catch(err){console.warn("Skipping unrecognised response chunk",err);}
-   }
-  }
-  if(!responseText)throw new Error("The AI returned an empty response");
+  let result;
+  try{result=await response.json();}catch(error){throw new Error("The server returned an unreadable response (HTTP "+response.status+").");}
+  if(!response.ok)throw new Error((result&&typeof result.error==="string"?result.error:"AI request failed")+" (HTTP "+response.status+")");
+  responseText=typeof result.response==="string"?result.response:(typeof result.choices?.[0]?.message?.content==="string"?result.choices[0].message.content:"");
+  if(!responseText.trim())throw new Error("Cloudflare returned no reply text. Check the Workers AI binding and deployment logs.");
+  responseEl.textContent=responseText;
+  chatMessages.scrollTop=chatMessages.scrollHeight;
   renderBlueprintFromResponse(responseText,responseEl);
   chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();speak(responseText);
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
