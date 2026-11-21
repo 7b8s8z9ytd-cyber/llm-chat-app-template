@@ -324,7 +324,11 @@ async function sendMessage(){
   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:chatHistory.slice(-12)})});
   let result;
   try{result=await response.json();}catch(error){throw new Error("The server returned an unreadable response (HTTP "+response.status+").");}
-  if(!response.ok)throw new Error((result&&typeof result.error==="string"?result.error:"AI request failed")+" (HTTP "+response.status+")");
+  if(!response.ok){
+   let detail=result&&typeof result.error==="string"?result.error:"AI request failed";
+   if(result&&result.diagnostic)detail+=" | Diagnostic: "+JSON.stringify(result.diagnostic).slice(0,700);
+   throw new Error(detail+" (HTTP "+response.status+")");
+  }
   responseText=typeof result.response==="string"?result.response:(typeof result.choices?.[0]?.message?.content==="string"?result.choices[0].message.content:"");
   if(!responseText.trim())throw new Error("Cloudflare returned no reply text. Check the Workers AI binding and deployment logs.");
   responseEl.textContent=responseText;
