@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#020b1d">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/jarvis-icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
 <title>J.A.R.V.I.S — Interface</title>
 <style>
 :root{color-scheme:dark;--cyan:#52eaff;--blue:#168acb;--muted:#6babc5;--line:rgba(72,211,255,.32);--panel:rgba(3,24,49,.72)}
@@ -363,4 +368,11 @@ document.querySelectorAll("[data-browser-url]").forEach(button=>button.addEventL
 }));
 </script>
 <script src="chat.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch(error => console.warn("JARVIS offline setup unavailable:", error));
+  });
+}
+</script>
 </body></html>
