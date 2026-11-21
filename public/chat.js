@@ -283,7 +283,8 @@ function renderBlueprintFromResponse(responseText,responseEl){
  responseEl.textContent="Blueprint generated below. Review the design, approximate dimensions and safety notes before building.";
  panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"nearest"});return true;
 }
-\nasync function sendMessage(){
+
+async function sendMessage(){
  const message=userInput.value.trim();
  if(!message||isProcessing)return;
  const browserCommand=parseBrowserCommand(message);
