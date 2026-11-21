@@ -207,8 +207,8 @@ function parseSse(buffer){
 function parseBrowserCommand(text){
  const q=text.trim();let m;
  if(/^(browser help|help with browser control)$/i.test(q))return {action:"help"};
- if((m=q.match(/^(open|go to|navigate to)\\s+(.+)$/i)))return {action:"open",args:{target:m[2].trim()}};
- if((m=q.match(/^(search (google for|the web for)|google)\\s+(.+)$/i)))return {action:"search",args:{query:m[3].trim()}};
+ if((m=q.match(/^(open|go to|navigate to)\s+(.+)$/i)))return {action:"open",args:{target:m[2].trim()}};
+ if((m=q.match(/^(search (google for|the web for)|google)\s+(.+)$/i)))return {action:"search",args:{query:m[3].trim()}};
  if(/^(new tab|open a new tab)$/i.test(q))return {action:"new_tab"};
  if(/^(back|go back)$/i.test(q))return {action:"back"};
  if(/^(forward|go forward)$/i.test(q))return {action:"forward"};
@@ -219,7 +219,7 @@ function safeWebUrl(target){
  let value=target.trim();
  if(!value)return null;
  if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)){
-  if(/^([a-z0-9-]+\\.)+[a-z]{2,}(?::\\d+)?(?:\/.*)?$/i.test(value))value="https://"+value;
+  if(/^([a-z0-9-]+\.)+[a-z]{2,}(?::\\d+)?(?:\/.*)?$/i.test(value))value="https://"+value;
   else value="https://www.google.com/search?q="+encodeURIComponent(value);
  }
  try{const u=new URL(value);return (u.protocol==="https:"||u.protocol==="http:")?u.href:null;}catch{return null;}
@@ -247,7 +247,7 @@ function handleBrowserCommand(command,originalMessage){
   if(history.length>1){history.back();reply="Going back in this JARVIS tab.";}else reply="There is no earlier page in this tab's history.";
  }else if(command.action==="forward"){history.forward();reply="Going forward in this JARVIS tab.";}
  else if(command.action==="read"){
-  const page=(document.querySelector("main")?.innerText||document.body.innerText||"").replace(/\\s+/g," ").trim().slice(0,1600);
+  const page=(document.querySelector("main")?.innerText||document.body.innerText||"").replace(/\s+/g," ").trim().slice(0,1600);
   reply=page?"Visible dashboard text: "+page:"I couldn't find readable page text.";
  }
  addMessage("assistant",reply);
@@ -303,7 +303,7 @@ function renderBlueprintFromResponse(responseText,responseEl){
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
  try{
   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:chatHistory.slice(-12)})});
-  if(!response.ok)throw new Error("AI request failed ("+response.status+")");
+  if(!response.ok){ let detail="HTTP "+response.status; try{const problem=await response.json();if(problem&&typeof problem.error==="string")detail+=" — "+problem.error;}catch(error){} throw new Error(detail); }
   if(!response.body)throw new Error("No response stream");
   const reader=response.body.getReader();const decoder=new TextDecoder();let buffer="";let finished=false;
   while(!finished){
@@ -320,11 +320,12 @@ function renderBlueprintFromResponse(responseText,responseEl){
     }catch(err){console.warn("Skipping unrecognised response chunk",err);}
    }
   }
-  if(!responseText)throw new Error("The AI returned an empty response");\n  renderBlueprintFromResponse(responseText,responseEl);
+  if(!responseText)throw new Error("The AI returned an empty response");
+  renderBlueprintFromResponse(responseText,responseEl);
   chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();speak(responseText);
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
  }catch(error){
-  console.error(error);responseEl.textContent="I couldn't reach the AI service. Please try again in a moment.";
+  console.error(error);responseEl.textContent="I couldn't reach the AI service. "+(error&&error.message?("Details: "+error.message):"Please try again in a moment.");
   coreStatus.textContent="CONNECTION ISSUE";aiStatus.textContent="CHECK AI CONNECTION";setAvatarState("idle");
  }finally{
   typingIndicator.classList.remove("visible");isProcessing=false;userInput.disabled=false;sendButton.disabled=false;userInput.focus();
