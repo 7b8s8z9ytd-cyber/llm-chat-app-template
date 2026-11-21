@@ -96,7 +96,7 @@ async function handleChatRequest(
 				typeof (msg as { content?: unknown }).content === "string")
 			.map((msg) => ({ role: msg.role, content: msg.content.trim().slice(0, 12000) }))
 			.filter((msg) => msg.content.length > 0)
-			.slice(-24);
+			.slice(-12);
 		if (!messages.some((msg) => msg.role === "user")) {
 			return new Response(JSON.stringify({ error: "Please send a message to JARVIS." }), {
 				status: 400, headers: { "content-type": "application/json" },
@@ -108,7 +108,7 @@ async function handleChatRequest(
 			MODEL_ID,
 			{
 				messages,
-				max_tokens: 1024,
+				max_tokens: 640,
 				stream: true,
 			},
 			{
