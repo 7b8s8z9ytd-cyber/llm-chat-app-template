@@ -139,7 +139,7 @@ if(wakeButton&&SpeechRecognition){
   for(let i=event.resultIndex;i<event.results.length;i++){
    if(!event.results[i].isFinal)continue;
    const heard=event.results[i][0].transcript.trim();
-   const match=heard.match(/\\bhey jarvis\\b[,. ]*(.*)$/i);
+   const match=heard.match(/\bhey jarvis\b[,. ]*(.*)$/i);
    if(!match)continue;
    const command=match[1].trim();
    if(command){userInput.value=command;sendMessage();}
