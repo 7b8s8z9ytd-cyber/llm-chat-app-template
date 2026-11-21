@@ -274,7 +274,7 @@ async function sendMessage(){
  let responseText="";
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
  try{
-  const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:chatHistory})});
+  const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:chatHistory.slice(-12)})});
   if(!response.ok)throw new Error("AI request failed ("+response.status+")");
   if(!response.body)throw new Error("No response stream");
   const reader=response.body.getReader();const decoder=new TextDecoder();let buffer="";let finished=false;
