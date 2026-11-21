@@ -1,4 +1,4 @@
-const UNSAFE_ACTION_WORDS = /\\b(send|submit|purchase|buy|pay|checkout|delete|remove|erase|transfer|post|publish|sign ?out|log ?out|confirm)\\b/i;
+const UNSAFE_ACTION_WORDS = /\b(send|submit|purchase|buy|pay|checkout|delete|remove|erase|transfer|post|publish|sign ?out|log ?out|confirm)\b/i;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== "JARVIS_BROWSER_COMMAND") return;
@@ -18,7 +18,7 @@ async function runCommand(command) {
     } else {
       let target = String(args.url || "").trim();
       if (!target) throw new Error("Tell me which website to open.");
-      if (!/^https?:\\/\\//i.test(target)) target = "https://" + target;
+      if (!/^https?:\/\//i.test(target)) target = "https://" + target;
       const parsed = new URL(target);
       if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("Only normal websites can be opened.");
       url = parsed.href;
@@ -51,7 +51,7 @@ async function runCommand(command) {
         target: { tabId: tab.id },
         func: () => (document.body?.innerText || "").slice(0, 6000)
       });
-      return { ok: true, message: "Visible page text:\\n" + (result?.[0]?.result || "No readable page text found.") };
+      return { ok: true, message: "Visible page text:\n" + (result?.[0]?.result || "No readable page text found.") };
     }
     if (action === "back" || action === "forward") {
       await chrome.scripting.executeScript({
@@ -68,7 +68,7 @@ async function runCommand(command) {
       const result = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: text => {
-          const norm = value => (value || "").replace(/\\s+/g, " ").trim().toLowerCase();
+          const norm = value => (value || "").replace(/\s+/g, " ").trim().toLowerCase();
           const wanted = norm(text);
           const candidates = [...document.querySelectorAll("button, a, [role='button']")];
           const match = candidates.find(el => {
@@ -94,7 +94,7 @@ async function runCommand(command) {
       const result = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: ({ field, value }) => {
-          const norm = text => (text || "").replace(/\\s+/g, " ").trim().toLowerCase();
+          const norm = text => (text || "").replace(/\s+/g, " ").trim().toLowerCase();
           const wanted = norm(field);
           const elements = [...document.querySelectorAll("input:not([type='password']):not([type='hidden']):not([type='email']), textarea, [contenteditable='true']")];
           const match = elements.find(el => {
