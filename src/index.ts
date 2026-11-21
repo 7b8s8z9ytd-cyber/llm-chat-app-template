@@ -119,19 +119,38 @@ async function handleChatRequest(
 			MODEL_ID,
 			{
 				messages,
-				max_tokens: 640,
+				max_completion_tokens: 1024,
 				// Gemma 4 enables reasoning by default; disable it so the
 				// response budget is used for the user-facing answer.
 				chat_template_kwargs: { enable_thinking: false },
 			},
 		);
-		const responseText = typeof result.response === "string"
-			? result.response
-			: typeof (result as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0]?.message?.content === "string"
-				? (result as { choices?: Array<{ message?: { content?: string } }> }).choices![0].message!.content!
-				: "";
+		const aiResult = result as {
+			response?: unknown;
+			choices?: Array<{ message?: { content?: unknown }; finish_reason?: string }>;
+			output_text?: unknown;
+		};
+		const choiceContent = aiResult.choices?.[0]?.message?.content;
+		const responseText = typeof aiResult.response === "string"
+			? aiResult.response
+			: typeof choiceContent === "string"
+				? choiceContent
+				: Array.isArray(choiceContent)
+					? choiceContent.map((part) => part && typeof part === "object" && "text" in part && typeof part.text === "string" ? part.text : "").join("")
+					: typeof aiResult.output_text === "string" ? aiResult.output_text : "";
 		if (!responseText.trim()) {
-			return new Response(JSON.stringify({ error: "Workers AI returned an empty reply. Check the model binding and Cloudflare AI logs." }), {
+			const diagnostic = {
+				resultKeys: Object.keys(result as Record<string, unknown>),
+				responseType: typeof aiResult.response,
+				choiceCount: aiResult.choices?.length ?? 0,
+				choiceContentType: typeof choiceContent,
+				finishReason: aiResult.choices?.[0]?.finish_reason ?? null,
+			};
+			console.error("Workers AI returned no text:", diagnostic);
+			return new Response(JSON.stringify({
+				error: "Workers AI returned an empty reply.",
+				diagnostic,
+			}), {
 				status: 502, headers: { "content-type": "application/json" },
 			});
 		}
