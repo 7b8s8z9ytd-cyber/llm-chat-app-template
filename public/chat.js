@@ -16,16 +16,29 @@ function setAvatarState(state){
  if(avatarLabel)avatarLabel.textContent=state==="speaking"?"J.A.R.V.I.S // SPEAKING":state==="listening"?"J.A.R.V.I.S // LISTENING":"STANDBY // HOLOGRAM STABLE";
 }
 const CHAT_STORAGE_KEY="jarvis-chat-history-v1";
+const SESSIONS_STORAGE_KEY="jarvis-sessions-v1";
 const DEFAULT_GREETING={role:"assistant",content:"Good evening. J.A.R.V.I.S systems are online. How may I assist?"};
-function loadSavedChat(){
- try{const saved=JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)||"[]");if(Array.isArray(saved)){const valid=saved.filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").slice(-24);if(valid.length)return valid;}}
- catch(error){console.warn("Local chat history unavailable",error);}
- return [DEFAULT_GREETING];
+function makeSession(messages=[DEFAULT_GREETING]){return {id:"session-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),title:"New session",updatedAt:Date.now(),messages:messages.slice(-100)};}
+function loadSessions(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY)||"null");
+  if(Array.isArray(saved)&&saved.length)return saved.filter(s=>s&&typeof s.id==="string"&&Array.isArray(s.messages)).slice(0,50);
+  const legacy=JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY)||"[]");
+  const valid=Array.isArray(legacy)?legacy.filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").slice(-24):[];
+  return [makeSession(valid.length?valid:[DEFAULT_GREETING])];
+ }catch(error){console.warn("Local session history unavailable",error);return [makeSession()];}
 }
-const chatHistory=loadSavedChat();
+let savedSessions=loadSessions();
+let activeSessionId=savedSessions[0].id;
+let chatHistory=savedSessions[0].messages.slice(-24);
 function saveChatHistory(){
- try{localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(chatHistory.slice(-24)));}
- catch(error){const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // STORAGE UNAVAILABLE";}
+ try{
+  const current=savedSessions.find(s=>s.id===activeSessionId);
+  if(current){current.messages=chatHistory.slice(-100);current.updatedAt=Date.now();const firstUser=chatHistory.find(m=>m.role==="user");current.title=firstUser?firstUser.content.slice(0,42):"New session";}
+  savedSessions.sort((a,b)=>b.updatedAt-a.updatedAt);savedSessions=savedSessions.slice(0,50);
+  localStorage.setItem(SESSIONS_STORAGE_KEY,JSON.stringify(savedSessions));localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(chatHistory.slice(-24)));
+  const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // "+savedSessions.length+" SAVED";
+ }catch(error){const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // STORAGE UNAVAILABLE";}
 }
 let isProcessing=false;
 let voiceOutput=true;
@@ -117,14 +130,19 @@ function addMessage(role,content){
  el.textContent=content;
  chatMessages.appendChild(el);chatMessages.scrollTop=chatMessages.scrollHeight;
 }
-if(chatHistory.length>1){chatMessages.innerHTML="";chatHistory.forEach(message=>addMessage(message.role,message.content));}
-saveChatHistory();
+function renderSessionHistory(){
+ const list=document.getElementById("session-history-list");if(!list)return;list.replaceChildren();
+ if(!savedSessions.length){const empty=document.createElement("div");empty.className="history-empty";empty.textContent="No saved sessions yet. Start chatting and your sessions will appear here.";list.appendChild(empty);return;}
+ savedSessions.forEach(session=>{const button=document.createElement("button");button.type="button";button.className="history-item"+(session.id===activeSessionId?" active":"");const firstUser=session.messages.find(m=>m.role==="user");button.textContent=session.title&&session.title!=="New session"?session.title:(firstUser?firstUser.content.slice(0,42):"New session");button.title=button.textContent;button.addEventListener("click",()=>openSession(session.id));list.appendChild(button);});
+}
+function openSession(id){
+ const session=savedSessions.find(s=>s.id===id);if(!session)return;activeSessionId=id;chatHistory=session.messages.slice(-24);chatMessages.replaceChildren();chatHistory.forEach(message=>addMessage(message.role,message.content));renderSessionHistory();coreStatus.textContent="SESSION RESTORED";const panel=document.getElementById("blueprint-panel");if(panel)panel.style.display="none";
+}
+if(chatHistory.length){chatMessages.innerHTML="";chatHistory.forEach(message=>addMessage(message.role,message.content));}
+renderSessionHistory();saveChatHistory();
 const newChatButton=document.getElementById("new-chat-button");
 if(newChatButton)newChatButton.addEventListener("click",()=>{
- if(!confirm("Start a new JARVIS conversation? This clears the saved conversation on this browser."))return;
- chatHistory.splice(0,chatHistory.length,DEFAULT_GREETING);
- chatMessages.innerHTML="";addMessage("assistant",DEFAULT_GREETING.content);saveChatHistory();
- coreStatus.textContent="NEW SESSION READY";
+ if(isProcessing)return;const session=makeSession();savedSessions.unshift(session);activeSessionId=session.id;chatHistory=session.messages.slice();chatMessages.replaceChildren();addMessage("assistant",DEFAULT_GREETING.content);const panel=document.getElementById("blueprint-panel");if(panel)panel.style.display="none";saveChatHistory();renderSessionHistory();coreStatus.textContent="NEW SESSION READY";
 });
 const capabilitiesButton=document.getElementById("capabilities-button");
 if(capabilitiesButton)capabilitiesButton.addEventListener("click",()=>{
@@ -299,7 +317,7 @@ async function sendMessage(){
  isProcessing=true;userInput.disabled=true;sendButton.disabled=true;
  addMessage("user",message);userInput.value="";userInput.style.height="auto";
  typingIndicator.classList.add("visible");coreStatus.textContent="PROCESSING REQUEST";aiStatus.textContent="AI CORE ACTIVE";setAvatarState("idle");
- chatHistory.push({role:"user",content:message});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();
+ chatHistory.push({role:"user",content:message});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();renderSessionHistory();
  let responseText="";
  const responseEl=document.createElement("div");responseEl.className="message assistant-message";chatMessages.appendChild(responseEl);
  try{
@@ -312,7 +330,7 @@ async function sendMessage(){
   responseEl.textContent=responseText;
   chatMessages.scrollTop=chatMessages.scrollHeight;
   renderBlueprintFromResponse(responseText,responseEl);
-  chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();speak(responseText);
+  chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();renderSessionHistory();speak(responseText);
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
  }catch(error){
   console.error(error);responseEl.textContent="I couldn't reach the AI service. "+(error&&error.message?("Details: "+error.message):"Please try again in a moment.");
