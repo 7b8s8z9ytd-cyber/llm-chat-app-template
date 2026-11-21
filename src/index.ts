@@ -115,29 +115,25 @@ async function handleChatRequest(
 		}
 		messages.unshift({ role: "system", content: SYSTEM_PROMPT });
 
-		const stream = await env.AI.run(
+		const result = await env.AI.run(
 			MODEL_ID,
 			{
 				messages,
 				max_tokens: 640,
-				stream: true,
-			},
-			{
-				// Uncomment to use AI Gateway
-				// gateway: {
-				//   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-				//   skipCache: false,      // Set to true to bypass cache
-				//   cacheTtl: 3600,        // Cache time-to-live in seconds
-				// },
 			},
 		);
-
-		return new Response(stream, {
-			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			},
+		const responseText = typeof result.response === "string"
+			? result.response
+			: typeof (result as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0]?.message?.content === "string"
+				? (result as { choices?: Array<{ message?: { content?: string } }> }).choices![0].message!.content!
+				: "";
+		if (!responseText.trim()) {
+			return new Response(JSON.stringify({ error: "Workers AI returned an empty reply. Check the model binding and Cloudflare AI logs." }), {
+				status: 502, headers: { "content-type": "application/json" },
+			});
+		}
+		return new Response(JSON.stringify({ response: responseText }), {
+			headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
 		});
 	} catch (error) {
 		console.error("Error processing chat request:", error);
