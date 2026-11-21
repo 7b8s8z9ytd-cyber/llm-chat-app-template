@@ -124,6 +124,48 @@ if(SpeechRecognition){
  voiceButton.title="Speech recognition is not supported in this browser";
 }
 
+// Optional wake phrase mode. Requires microphone permission and a browser that
+// supports continuous SpeechRecognition. It can be stopped at any time.
+const wakeButton=document.getElementById("wake-button");
+let wakeRecognition=null;
+let wakeEnabled=false;
+if(wakeButton&&SpeechRecognition){
+ wakeRecognition=new SpeechRecognition();
+ wakeRecognition.lang="en-IE";
+ wakeRecognition.continuous=true;
+ wakeRecognition.interimResults=false;
+ wakeRecognition.maxAlternatives=1;
+ wakeRecognition.onresult=(event)=>{
+  for(let i=event.resultIndex;i<event.results.length;i++){
+   if(!event.results[i].isFinal)continue;
+   const heard=event.results[i][0].transcript.trim();
+   const match=heard.match(/\\bhey jarvis\\b[,. ]*(.*)$/i);
+   if(!match)continue;
+   const command=match[1].trim();
+   if(command){userInput.value=command;sendMessage();}
+   else if(recognition){try{recognition.start();}catch(error){}}
+  }
+ };
+ wakeRecognition.onerror=(event)=>{
+  if(event.error==="not-allowed"||event.error==="service-not-allowed"){
+   wakeEnabled=false;wakeButton.textContent="HEY JARVIS: PERMISSION NEEDED";wakeButton.classList.remove("active");
+  }
+ };
+ wakeRecognition.onend=()=>{
+  if(wakeEnabled){try{wakeRecognition.start();}catch(error){}}
+ };
+ wakeButton.addEventListener("click",()=>{
+  wakeEnabled=!wakeEnabled;
+  wakeButton.textContent=wakeEnabled?"HEY JARVIS: ON":"HEY JARVIS: OFF";
+  wakeButton.classList.toggle("active",wakeEnabled);
+  if(wakeEnabled){try{wakeRecognition.start();coreStatus.textContent="WAKE PHRASE ACTIVE";}catch(error){wakeEnabled=false;wakeButton.textContent="HEY JARVIS: OFF";wakeButton.classList.remove("active");coreStatus.textContent="MICROPHONE UNAVAILABLE";}}
+  else{wakeRecognition.stop();coreStatus.textContent="AWAITING INSTRUCTIONS";}
+ });
+}else if(wakeButton){
+ wakeButton.disabled=true;wakeButton.textContent="WAKE PHRASE UNSUPPORTED";
+ wakeButton.title="This browser does not support continuous speech recognition.";
+}
+
 function addMessage(role,content){
  const el=document.createElement("div");
  el.className="message "+(role==="user"?"user-message":"assistant-message");
