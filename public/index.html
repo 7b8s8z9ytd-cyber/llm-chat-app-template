@@ -183,6 +183,17 @@ main{max-width:1600px;grid-template-columns:minmax(205px,245px) minmax(0,1fr) mi
 <div class="controls" style="margin-top:10px;max-width:100%;width:100%"><select id="voice-select" aria-label="Choose JARVIS voice" class="control" style="max-width:75%;text-transform:none;letter-spacing:.5px"><option>Loading available voices...</option></select><button class="control" id="voice-preview-button">TEST VOICE</button></div>
 <div class="small" id="voice-status" style="text-align:center;margin-top:7px">VOICE PROFILE // CINEMATIC BRITISH</div>
 <section class="panel session-history-panel" aria-label="Saved chat sessions"><h2>SESSION HISTORY</h2><div class="small" style="margin-bottom:9px">SAVED ON THIS CHROMEBOOK</div><input id="session-search" class="control" type="search" maxlength="60" placeholder="Search saved sessions..." aria-label="Search saved sessions" style="width:100%;text-align:left;text-transform:none;letter-spacing:0;margin-bottom:8px"><div id="session-history-list" class="history-list"><div class="history-empty">Loading saved sessions...</div></div></section>
+<section class="panel session-history-panel" id="cloud-sync-panel" aria-label="Encrypted device sync">
+<h2>ENCRYPTED DEVICE SYNC</h2>
+<div class="small" style="margin-bottom:9px">SYNC PERSONAL CHATS AND WORKSHOP NOTES BETWEEN YOUR DEVICES. PLUMBING CUSTOMER/JOB RECORDS ARE EXCLUDED.</div>
+<label class="small" for="sync-code" style="display:block;margin:8px 0 5px">PRIVATE SYNC CODE</label>
+<input id="sync-code" class="control" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Generate a code on your first device" style="width:100%;text-align:left;text-transform:none;letter-spacing:.5px">
+<div class="controls" style="justify-content:flex-start;margin-top:8px"><button class="control" id="sync-generate" type="button">GENERATE CODE</button><button class="control" id="sync-copy" type="button">COPY CODE</button></div>
+<label class="small" for="sync-passphrase" style="display:block;margin:10px 0 5px">ENCRYPTION PASSPHRASE (12+ CHARACTERS)</label>
+<input id="sync-passphrase" class="control" type="password" autocomplete="new-password" placeholder="Create a strong private passphrase" style="width:100%;text-align:left;text-transform:none;letter-spacing:.5px">
+<div class="controls" style="justify-content:flex-start;margin-top:10px"><button class="control" id="sync-connect" type="button">CONNECT / SYNC NOW</button><button class="control" id="sync-disconnect" type="button">DISCONNECT</button></div>
+<div class="small" id="sync-status" role="status" aria-live="polite" style="margin-top:9px">DEVICE SYNC // NOT CONNECTED</div>
+</section>
 <section class="panel" style="width:min(100%,610px);margin-top:14px">
 <h2>BROWSER QUICK ACCESS // WEB MODE</h2>
 <div class="controls" style="justify-content:flex-start">
