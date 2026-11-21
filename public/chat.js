@@ -179,9 +179,60 @@ function parseSse(buffer){
  const events=parts.map(part=>part.split("\n").filter(line=>line.startsWith("data:")).map(line=>line.slice(5).trimStart()).join("\n")).filter(Boolean);
  return {events,buffer:remainder};
 }
+function parseBrowserCommand(text){
+ const q=text.trim();
+ let m;
+ if(/^(browser help|help with browser control)$/i.test(q))return {action:"help"};
+ if(/^(open|go to|navigate to)\\s+(.+)$/i.test(q)){let target=q.replace(/^(open|go to|navigate to)\\s+/i,"").trim();return {action:"open",args:{url:target}};}
+ if(/^(search (google for|the web for)|google)\\s+(.+)$/i.test(q)){return {action:"search",args:{query:q.replace(/^(search (google for|the web for)|google)\\s+/i,"").trim()}};}
+ if(/^(new tab|open a new tab)$/i.test(q))return {action:"new_tab"};
+ if(/^(close (this |the )?tab|close current tab)$/i.test(q))return {action:"close_tab"};
+ if((m=q.match(/^(switch to )?tab (\\d+)$/i)))return {action:"switch_tab",args:{index:Number(m[2])}};
+ if(/^(go )?back$/i.test(q))return {action:"back"};
+ if(/^(go )?forward$/i.test(q))return {action:"forward"};
+ if(/^(read (this |the )?page|summarise this page|summarize this page)$/i.test(q))return {action:"read"};
+ if((m=q.match(/^click (?:the )?(.+)$/i)))return {action:"click",args:{label:m[1].trim()}};
+ if((m=q.match(/^fill (?:the )?(.+?) field with (.+)$/i)))return {action:"fill",args:{field:m[1].trim(),text:m[2].trim()}};
+ return null;
+}
+function runBrowserCommand(command){
+ return new Promise(resolve=>{
+  const requestId="jarvis-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+  const timeout=setTimeout(()=>{window.removeEventListener("message",listener);resolve({ok:false,message:"I couldn't reach the JARVIS Chrome extension. Check that it is installed and enabled."});},12000);
+  function listener(event){
+   if(event.source!==window||event.data?.source!=="JARVIS_EXTENSION"||event.data?.type!=="BROWSER_RESULT"||event.data?.requestId!==requestId)return;
+   clearTimeout(timeout);window.removeEventListener("message",listener);resolve(event.data.result||{ok:false,message:"The extension returned no result."});
+  }
+  window.addEventListener("message",listener);
+  window.postMessage({source:"JARVIS_DASHBOARD",type:"BROWSER_COMMAND",requestId,command},"*");
+ });
+}
+async function handleBrowserCommand(command,originalMessage){
+ if(command.action==="help"){
+  addMessage("user",originalMessage);
+  addMessage("assistant","Browser commands you can try: “open wikipedia.org”, “search Google for rugby results”, “new tab”, “switch to tab 2”, “close tab”, “back”, “forward”, “read this page”, “click the About link”, or “fill the Search field with rugby”. Install and enable the JARVIS Chrome extension first. For a website, click the extension icon and allow access to that site. I won't submit forms, interact with password fields, or carry out purchases.");
+  return true;
+ }
+ if(command.action==="close_tab"&&!confirm("JARVIS wants to close the current Chrome tab. Continue?"))return true;
+ if(command.action==="click"&&!confirm("JARVIS wants to click “"+command.args.label+"”. Continue?"))return true;
+ if(command.action==="fill"&&!confirm("JARVIS wants to enter text into the “"+command.args.field+"” field. It will not submit the form. Continue?"))return true;
+ addMessage("user",originalMessage);
+ addMessage("assistant","Browser control request received. Checking the Chrome extension…");
+ const result=await runBrowserCommand(command);
+ const messages=chatMessages.querySelectorAll(".assistant-message");
+ const last=messages[messages.length-1];
+ if(last)last.textContent=result.message|| (result.ok?"Browser action complete.":"Browser action failed.");
+ if(command.action==="read"&&result.ok){
+  addMessage("assistant",result.message);
+ }
+ return true;
+}
+
 async function sendMessage(){
  const message=userInput.value.trim();
  if(!message||isProcessing)return;
+ const browserCommand=parseBrowserCommand(message);
+ if(browserCommand){isProcessing=true;userInput.disabled=true;sendButton.disabled=true;userInput.value="";userInput.style.height="auto";try{await handleBrowserCommand(browserCommand,message);}finally{isProcessing=false;userInput.disabled=false;sendButton.disabled=false;userInput.focus();}return;}
  if(/\\b(run|start|do)\\s+(a\\s+)?(chromebook\\s+)?(system\\s+)?diagnostics?\\b|\\bcheck my chromebook\\b/i.test(message)){
   addMessage("user",message);userInput.value="";userInput.style.height="auto";
   addMessage("assistant","Certainly. I will run the safe browser and connection checks now. For deeper hardware tests, please use the ChromeOS Diagnostics app.");
