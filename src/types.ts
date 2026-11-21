@@ -2,7 +2,7 @@
  * Type definitions for the LLM chat application.
  */
 
-export interface Env {
+export interface Env {\n\t/** D1 database for encrypted, client-side-encrypted device sync. */\n\tDB?: D1Database;
 	/**
 	 * Binding for the Workers AI API.
 	 */
