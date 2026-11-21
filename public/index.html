@@ -88,6 +88,7 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 .model-face.bottom{transform:rotateX(-90deg) translateZ(calc(var(--h)/2))}
 .concept-model.tower{--w:75px;--h:150px;--d:75px}
 .concept-model.wide{--w:155px;--h:75px;--d:90px}
+.planner-status{font-size:11px;color:#80cde4;line-height:1.6;margin-top:8px}.backup-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.backup-row .control{flex:1}
 
 </style>
 </head>
@@ -162,7 +163,7 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
   <div class="workshop-module">
    <div class="small">MISSION CONTROL // TASKS</div>
    <div class="controls workshop-entry"><input id="task-name" class="control" maxlength="100" placeholder="Task or mission" aria-label="New task"><button class="control" id="add-task" type="button">ADD</button></div>
-   <div class="controls workshop-entry"><input id="task-date" class="control" type="date" aria-label="Task due date"><span class="small">OPTIONAL DUE DATE</span></div>
+   <div class="controls workshop-entry"><input id="task-date" class="control" type="datetime-local" aria-label="Task due date and reminder time"><span class="small">OPTIONAL DUE DATE</span></div>
    <div id="task-list" class="workshop-list"><div class="workshop-empty">No missions yet.</div></div>
   </div>
  </div>
@@ -172,6 +173,8 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
   <button class="control" type="button" id="security-check">CHECK DASHBOARD SECURITY</button>
  </div>
  <div id="security-result" class="small" style="line-height:1.7;margin-top:8px">SECURITY MONITOR // READY</div>
+ <div class="backup-row"><button class="control" id="enable-reminders" type="button">ENABLE REMINDERS</button><button class="control" id="export-backup" type="button">EXPORT JARVIS BACKUP</button><button class="control" id="install-app" type="button" hidden>INSTALL JARVIS APP</button></div>
+ <div id="planner-status" class="planner-status" aria-live="polite">REMINDERS // OFF. Reminders are checked while this dashboard is open.</div>
 </section>
 <section class="panel" id="blueprint-panel" style="width:min(100%,610px);margin-top:14px;display:none"><h2>J.A.R.V.I.S // PROJECT BLUEPRINT</h2><div id="blueprint-content"></div></section><div class="chat">
 <div class="chat-head"><span>JARVIS COMMUNICATION LINK</span><div style="display:flex;align-items:center;gap:8px"><span id="connection">SECURE CHANNEL</span><button class="control" id="new-chat-button" type="button" style="padding:6px 9px">NEW SESSION</button></div></div>
