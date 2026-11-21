@@ -175,7 +175,10 @@ function addMessage(role,content){
 function renderSessionHistory(){
  const list=document.getElementById("session-history-list");if(!list)return;list.replaceChildren();
  if(!savedSessions.length){const empty=document.createElement("div");empty.className="history-empty";empty.textContent="No saved sessions yet. Start chatting and your sessions will appear here.";list.appendChild(empty);return;}
- savedSessions.forEach(session=>{const button=document.createElement("button");button.type="button";button.className="history-item"+(session.id===activeSessionId?" active":"");const firstUser=session.messages.find(m=>m.role==="user");button.textContent=session.title&&session.title!=="New session"?session.title:(firstUser?firstUser.content.slice(0,42):"New session");button.title=button.textContent;button.addEventListener("click",()=>openSession(session.id));list.appendChild(button);});
+ const filter=(document.getElementById("session-search")?.value||"").trim().toLowerCase();
+ const visibleSessions=savedSessions.filter(session=>(session.title||"New session").toLowerCase().includes(filter)||session.messages.some(m=>String(m.content||"").toLowerCase().includes(filter)));
+ if(!visibleSessions.length){const empty=document.createElement("div");empty.className="history-empty";empty.textContent=filter?"No sessions match that search.":"No saved sessions yet.";list.appendChild(empty);return;}
+ visibleSessions.forEach(session=>{const button=document.createElement("button");button.type="button";button.className="history-item"+(session.id===activeSessionId?" active":"");const firstUser=session.messages.find(m=>m.role==="user");button.textContent=session.title&&session.title!=="New session"?session.title:(firstUser?firstUser.content.slice(0,42):"New session");button.title=button.textContent;button.addEventListener("click",()=>openSession(session.id));list.appendChild(button);});
 }
 function openSession(id){
  const session=savedSessions.find(s=>s.id===id);if(!session)return;activeSessionId=id;chatHistory=session.messages.slice(-24);chatMessages.replaceChildren();chatHistory.forEach(message=>addMessage(message.role,message.content));renderSessionHistory();coreStatus.textContent="SESSION RESTORED";const panel=document.getElementById("blueprint-panel");if(panel)panel.style.display="none";
@@ -584,4 +587,33 @@ if(installButton)installButton.addEventListener("click",async()=>{
 window.addEventListener("appinstalled",()=>{
  if(installButton)installButton.hidden=true;
  updateReminderStatus("JARVIS APP INSTALLED.");
+});
+
+
+// Session search and cautious backup import (merge only; never overwrite existing data).
+document.getElementById("session-search")?.addEventListener("input",renderSessionHistory);
+const backupFile=document.getElementById("backup-file");
+document.getElementById("import-backup")?.addEventListener("click",()=>backupFile?.click());
+backupFile?.addEventListener("change",async()=>{
+ const file=backupFile.files?.[0];backupFile.value="";
+ if(!file)return;
+ if(file.size>5*1024*1024){updateReminderStatus("BACKUP FILE TOO LARGE (MAX 5 MB).");return;}
+ try{
+  const data=JSON.parse(await file.text());
+  if(data?.format!=="jarvis-backup-v1"||!Array.isArray(data.sessions)||!data.workshop||typeof data.workshop!=="object")throw new Error("This does not look like a JARVIS backup.");
+  const validSessions=data.sessions.filter(s=>s&&typeof s.id==="string"&&Array.isArray(s.messages)).map(s=>({
+   id:s.id,title:String(s.title||"Imported session").slice(0,100),updatedAt:Number(s.updatedAt)||Date.now(),
+   messages:s.messages.filter(m=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").slice(-100).map(m=>({role:m.role,content:m.content.slice(0,12000)}))
+  }));
+  const known=new Set(savedSessions.map(s=>s.id));
+  validSessions.forEach(s=>{if(!known.has(s.id)){savedSessions.push(s);known.add(s.id);}});
+  savedSessions.sort((a,b)=>b.updatedAt-a.updatedAt);savedSessions=savedSessions.slice(0,50);
+  const projects=Array.isArray(data.workshop.projects)?data.workshop.projects:[],tasks=Array.isArray(data.workshop.tasks)?data.workshop.tasks:[];
+  const projectIds=new Set(workshopData.projects.map(p=>p.id));
+  projects.filter(p=>p&&typeof p.name==="string").slice(0,100).forEach(p=>{if(!projectIds.has(p.id))workshopData.projects.push({id:String(p.id||("import-"+Date.now()+"-"+Math.random())),name:p.name.slice(0,100),createdAt:Number(p.createdAt)||Date.now()});});
+  const taskIds=new Set(workshopData.tasks.map(t=>t.id));
+  tasks.filter(t=>t&&typeof t.name==="string").slice(0,200).forEach(t=>{if(!taskIds.has(t.id))workshopData.tasks.push({id:String(t.id||("import-"+Date.now()+"-"+Math.random())),name:t.name.slice(0,150),due:typeof t.due==="string"?t.due:"",done:!!t.done,createdAt:Number(t.createdAt)||Date.now()});});
+  saveChatHistory();saveWorkshop();renderSessionHistory();renderWorkshop();
+  updateReminderStatus("BACKUP IMPORTED // MERGED WITHOUT REPLACING CURRENT DATA. REOPEN A SESSION FROM HISTORY.");
+ }catch(error){updateReminderStatus("BACKUP IMPORT FAILED: "+(error.message||"INVALID FILE"));}
 });
