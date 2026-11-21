@@ -176,6 +176,46 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
  <div class="backup-row"><button class="control" id="enable-reminders" type="button">ENABLE REMINDERS</button><button class="control" id="export-backup" type="button">EXPORT JARVIS BACKUP</button><button class="control" id="import-backup" type="button">IMPORT BACKUP</button><input id="backup-file" type="file" accept="application/json,.json" hidden><button class="control" id="install-app" type="button" hidden>INSTALL JARVIS APP</button></div>
  <div id="planner-status" class="planner-status" aria-live="polite">REMINDERS // OFF. Reminders are checked while this dashboard is open.</div>
 </section>
+
+<section class="panel" id="business-panel" style="width:min(100%,610px);margin-top:14px">
+ <h2>BUSINESS MODE // PLUMBING OPERATIONS</h2>
+ <div class="small">LOCAL BUSINESS WORKSPACE // CUSTOMER AND JOB RECORDS STAY IN THIS BROWSER</div>
+ <div class="workshop-grid">
+  <div class="workshop-module">
+   <div class="small">CUSTOMER REGISTER</div>
+   <input id="biz-customer-name" class="control" maxlength="90" placeholder="Customer name" aria-label="Customer name" style="width:100%;margin-top:8px;text-align:left;text-transform:none;letter-spacing:0">
+   <input id="biz-customer-phone" class="control" maxlength="35" placeholder="Phone (optional)" aria-label="Customer phone" style="width:100%;margin-top:7px;text-align:left;text-transform:none;letter-spacing:0">
+   <input id="biz-customer-address" class="control" maxlength="160" placeholder="Job address (optional)" aria-label="Customer address" style="width:100%;margin-top:7px;text-align:left;text-transform:none;letter-spacing:0">
+   <button class="control" id="biz-add-customer" type="button" style="margin-top:8px;width:100%">SAVE CUSTOMER</button>
+   <div id="biz-customer-list" class="workshop-list"></div>
+  </div>
+  <div class="workshop-module">
+   <div class="small">JOB TRACKER</div>
+   <input id="biz-job-title" class="control" maxlength="100" placeholder="Job / work required" aria-label="Job description" style="width:100%;margin-top:8px;text-align:left;text-transform:none;letter-spacing:0">
+   <input id="biz-job-customer" class="control" maxlength="90" placeholder="Customer name" aria-label="Job customer" style="width:100%;margin-top:7px;text-align:left;text-transform:none;letter-spacing:0">
+   <input id="biz-job-date" class="control" type="date" aria-label="Job date" style="width:100%;margin-top:7px">
+   <select id="biz-job-status" class="control" aria-label="Job status" style="width:100%;margin-top:7px"><option>Enquiry</option><option>Quote needed</option><option>Booked</option><option>In progress</option><option>Completed</option><option>Invoiced</option></select>
+   <button class="control" id="biz-add-job" type="button" style="margin-top:8px;width:100%">ADD JOB</button>
+   <div id="biz-job-list" class="workshop-list"></div>
+  </div>
+ </div>
+ <div class="workshop-module" style="margin-top:12px">
+  <div class="small">QUOTE CALCULATOR // DRAFT ONLY</div>
+  <input id="biz-quote-customer" class="control" maxlength="90" placeholder="Customer / business name" aria-label="Quote customer" style="width:100%;margin-top:8px;text-align:left;text-transform:none;letter-spacing:0">
+  <input id="biz-quote-description" class="control" maxlength="180" placeholder="Work description" aria-label="Quote work description" style="width:100%;margin-top:7px;text-align:left;text-transform:none;letter-spacing:0">
+  <div class="workshop-entry controls">
+   <input id="biz-quote-labour" class="control" type="number" min="0" max="100000" step="0.01" placeholder="Labour €" aria-label="Labour amount">
+   <input id="biz-quote-materials" class="control" type="number" min="0" max="100000" step="0.01" placeholder="Materials €" aria-label="Materials amount">
+  </div>
+  <div class="workshop-entry controls">
+   <input id="biz-quote-vat" class="control" type="number" min="0" max="100" step="0.1" value="0" placeholder="VAT %" aria-label="VAT percentage">
+   <button class="control" id="biz-make-quote" type="button">PREVIEW / PRINT QUOTE</button>
+  </div>
+  <div id="biz-quote-total" class="small" style="margin-top:8px" aria-live="polite">Enter amounts to calculate a draft quote. Confirm the correct VAT treatment with an accountant.</div>
+ </div>
+ <div class="small" id="biz-status" aria-live="polite" style="margin-top:10px">BUSINESS MODE // READY</div>
+ <div class="small" style="margin-top:7px">Privacy note: records are stored only in this browser profile, not shared with your dad or synced to other devices. Avoid storing bank details, passwords or sensitive customer information. Back up securely and get your dad's approval before entering real customer records.</div>
+</section>
 <section class="panel" id="blueprint-panel" style="width:min(100%,610px);margin-top:14px;display:none"><h2>J.A.R.V.I.S // PROJECT BLUEPRINT</h2><div id="blueprint-content"></div></section><div class="chat">
 <div class="chat-head"><span>JARVIS COMMUNICATION LINK</span><div style="display:flex;align-items:center;gap:8px"><span id="connection">SECURE CHANNEL</span><button class="control" id="new-chat-button" type="button" style="padding:6px 9px">NEW SESSION</button></div></div>
 <div id="chat-messages"><div class="message assistant-message">Good evening. J.A.R.V.I.S systems are online. How may I assist?</div></div>
