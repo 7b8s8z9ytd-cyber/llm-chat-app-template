@@ -51,6 +51,12 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 @keyframes voiceBars{from{height:4px;opacity:.65}to{height:20px;opacity:1}}
 @media(prefers-reduced-motion:reduce){.avatar-visualizer i,.avatar-stage .avatar-art,.avatar-stage .avatar-orbit,.avatar-stage .avatar-scan{animation:none!important}}
 
+
+.info-clock{font-size:25px;letter-spacing:2px;color:#baf7ff;text-shadow:0 0 12px rgba(44,210,255,.5);font-variant-numeric:tabular-nums}
+.info-weather{border-top:1px solid rgba(69,220,255,.2);border-bottom:1px solid rgba(69,220,255,.2);padding:4px 0 12px;margin-top:10px}
+#weather-result{min-height:38px}
+#weather-city{box-sizing:border-box}
+
 </style>
 </head>
 <body>
@@ -77,6 +83,26 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 <button class="control" type="button" data-browser-url="https://mail.google.com">GMAIL</button>
 </div>
 <div class="small" style="line-height:1.7;margin-top:9px">WEB MODE // OPENS SITES IN NEW TABS WHEN YOUR BROWSER ALLOWS IT. NO EXTENSION REQUIRED.</div><div class="controls" style="justify-content:flex-start;margin-top:8px"><button class="control" id="capabilities-button" type="button">WHAT CAN YOU DO?</button><span class="small" id="memory-status">SESSION MEMORY // THIS BROWSER</span></div>
+</section>
+<section class="panel info-centre" style="width:min(100%,610px);margin-top:14px">
+ <h2>LIVE INFORMATION CENTRE</h2>
+ <div class="info-clock" id="info-clock">LOCAL TIME // LOADING</div>
+ <div class="small" id="info-date" style="margin-top:3px">DATE // LOADING</div>
+ <div class="info-weather">
+  <div class="small" style="margin:12px 0 7px">LIVE WEATHER // OPEN-METEO</div>
+  <div class="controls" style="justify-content:flex-start">
+   <input id="weather-city" class="control" type="text" maxlength="80" placeholder="Enter a town or city" aria-label="Town or city for weather" style="flex:1;min-width:150px;text-align:left;text-transform:none;letter-spacing:0">
+   <button class="control" id="weather-search" type="button">CHECK WEATHER</button>
+  </div>
+  <div id="weather-result" class="small" style="line-height:1.7;margin-top:9px">Enter a town or city to see current conditions and today's forecast. No precise location is collected.</div>
+ </div>
+ <div class="small" style="margin:14px 0 7px">LIVE INFORMATION LINKS</div>
+ <div class="controls" style="justify-content:flex-start">
+  <button class="control" type="button" data-info-url="https://news.google.com/">WORLD NEWS</button>
+  <button class="control" type="button" data-info-url="https://www.met.ie/">MET ÉIREANN</button>
+  <button class="control" type="button" data-info-url="https://www.bbc.com/sport">SPORT</button>
+ </div>
+ <div class="small" style="margin-top:8px">Weather is retrieved when requested. News and sports links open their websites; JARVIS does not claim to have read them automatically.</div>
 </section>
 <section class="panel" id="blueprint-panel" style="width:min(100%,610px);margin-top:14px;display:none"><h2>J.A.R.V.I.S // PROJECT BLUEPRINT</h2><div id="blueprint-content"></div></section><div class="chat">
 <div class="chat-head"><span>JARVIS COMMUNICATION LINK</span><div style="display:flex;align-items:center;gap:8px"><span id="connection">SECURE CHANNEL</span><button class="control" id="new-chat-button" type="button" style="padding:6px 9px">NEW SESSION</button></div></div>
