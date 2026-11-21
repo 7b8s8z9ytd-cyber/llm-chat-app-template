@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "J.A.R.V.I.S — Personal Assistant",
+  "short_name": "JARVIS",
+  "description": "Personal JARVIS command centre",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020b1d",
+  "theme_color": "#020b1d",
+  "icons": [
+    {
+      "src": "/jarvis-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
