@@ -74,7 +74,7 @@ async function runCommand(command) {
           const match = candidates.find(el => {
             const visible = !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
             const label = norm(el.innerText || el.getAttribute("aria-label") || el.getAttribute("title"));
-            return visible && !el.disabled && !el.matches("button[type=submit], input[type=submit], button[form], [type=submit]") && label === wanted;
+            return visible && !el.disabled && !el.matches("button[type=submit], input[type=submit], button[form], [type=submit]") && !(el.tagName === "BUTTON" && el.closest("form")) && label === wanted;
           });
           if (!match) return { ok: false, message: "I couldn't find a visible button or link with that exact text." };
           match.click();
