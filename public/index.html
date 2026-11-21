@@ -111,6 +111,55 @@ main{max-width:1500px;grid-template-columns:minmax(220px,260px) minmax(0,680px) 
 @media(max-width:1000px){main{grid-template-columns:minmax(0,1fr);max-width:760px}.center{grid-row:1}.side{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.side .panel:last-child{display:block}.avatar-panel{grid-column:1/-1}.reactor{width:min(78vw,400px)}}
 @media(max-width:560px){header{height:58px;font-size:10px;letter-spacing:1.5px}#jarvis-quick-nav{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}#jarvis-quick-nav a{white-space:nowrap;padding:7px 10px}main{padding:14px 10px 24px}.side{grid-template-columns:1fr 1fr}.reactor{width:min(88vw,360px)}#chat-messages{height:170px}.controls .control{padding:9px 11px}}
 
+
+/* JARVIS COMMAND-CENTRE REDESIGN */
+main{max-width:1600px;grid-template-columns:minmax(205px,245px) minmax(0,1fr) minmax(205px,245px);gap:16px;padding:18px 20px 32px;align-items:start}
+.side{position:sticky;top:66px;gap:12px}
+.center{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:start;gap:12px;min-width:0}
+.center>.reactor,.center>.tagline,.center>.controls,.center>.chat,.center>.session-history-panel,#info-centre,#business-panel,#blueprint-panel{grid-column:1/-1}
+.center>.reactor{width:min(100%,390px);margin:0 auto}
+.center>.tagline{margin:0 0 2px}
+.center>.controls{margin-top:0!important}
+.center>.session-history-panel{margin-top:0}
+.center>.panel,.center>.chat{width:100%!important;max-width:none;margin:0!important;min-width:0}
+.center>#info-centre{grid-column:1/-1}
+.center>#designer-panel{grid-column:1}
+.center>#workshop-panel{grid-column:2}
+.center>#business-panel{grid-column:1/-1}
+.center>#blueprint-panel{grid-column:1/-1}
+.center>#chat-panel{grid-column:1/-1}
+.center>.session-history-panel{grid-column:1/-1}
+.center>.panel{height:100%}
+#chat-messages{height:210px}
+#jarvis-quick-nav{padding:8px 12px;gap:7px}
+#jarvis-quick-nav a{border-radius:5px;padding:8px 13px}
+.panel{border-radius:8px;background:linear-gradient(145deg,rgba(5,35,62,.9),rgba(2,15,34,.88));box-shadow:0 8px 24px rgba(0,0,0,.18),inset 0 1px rgba(115,230,255,.08)}
+.panel h2{display:flex;align-items:center;gap:8px;padding-bottom:9px;border-bottom:1px solid rgba(72,211,255,.16);margin-bottom:11px}
+.workshop-module{border-radius:6px}
+.control{border-radius:5px}
+.chat{border-radius:8px;overflow:hidden}
+.chat-head{align-items:center;min-height:42px}
+.composer{padding:10px}
+.session-history-panel .history-list{max-height:145px}
+#business-panel{border-color:rgba(82,234,255,.34)}
+@media(max-width:1100px){
+ main{grid-template-columns:minmax(0,1fr);max-width:820px}
+ .side{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .center{grid-row:1}
+ .avatar-panel{grid-column:1/-1}
+ .avatar-stage{height:210px}
+ .avatar-art{height:205px}
+}
+@media(max-width:650px){
+ .center{grid-template-columns:minmax(0,1fr)}
+ .center>*{grid-column:1/-1!important}
+ .side{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reactor{width:min(88vw,350px)!important}
+ #chat-messages{height:175px}
+ .center>.controls{flex-wrap:wrap}
+ .center>.controls select{max-width:100%!important;flex:1;min-width:0}
+}
+
 </style>
 </head>
 <body>
