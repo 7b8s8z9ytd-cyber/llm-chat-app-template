@@ -57,6 +57,19 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 #weather-result{min-height:38px}
 #weather-city{box-sizing:border-box}
 
+
+.workshop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.workshop-module{min-width:0;border:1px solid rgba(69,220,255,.2);padding:10px;background:rgba(0,14,31,.35)}
+.workshop-entry{justify-content:flex-start;margin-top:8px}
+.workshop-entry .control{min-width:0;flex:1;padding:9px 8px}
+.workshop-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:190px;overflow:auto}
+.workshop-item{display:flex;align-items:center;gap:7px;border:1px solid rgba(69,220,255,.16);padding:7px;font-size:11px;color:#c9f7ff}
+.workshop-item span{flex:1;min-width:0;overflow-wrap:anywhere}
+.workshop-item.done span{text-decoration:line-through;opacity:.55}
+.workshop-item button{border:1px solid rgba(69,220,255,.3);background:rgba(3,43,72,.65);color:#baf7ff;padding:4px 7px;cursor:pointer;font-size:10px}
+.workshop-empty{font-size:11px;color:#6babc5;line-height:1.6}
+@media(max-width:560px){.workshop-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -103,6 +116,29 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
   <button class="control" type="button" data-info-url="https://www.bbc.com/sport">SPORT</button>
  </div>
  <div class="small" style="margin-top:8px">Weather is retrieved when requested. News and sports links open their websites; JARVIS does not claim to have read them automatically.</div>
+</section>
+<section class="panel" id="workshop-panel" style="width:min(100%,610px);margin-top:14px">
+ <h2>PROJECT WORKSHOP // MISSION CONTROL</h2>
+ <div class="small">PROJECTS AND TASKS ARE SAVED LOCALLY IN THIS BROWSER</div>
+ <div class="workshop-grid">
+  <div class="workshop-module">
+   <div class="small">PROJECT WORKSHOP</div>
+   <div class="controls workshop-entry"><input id="project-name" class="control" maxlength="70" placeholder="New project name" aria-label="New project name"><button class="control" id="add-project" type="button">ADD</button></div>
+   <div id="project-list" class="workshop-list"><div class="workshop-empty">No projects yet.</div></div>
+  </div>
+  <div class="workshop-module">
+   <div class="small">MISSION CONTROL // TASKS</div>
+   <div class="controls workshop-entry"><input id="task-name" class="control" maxlength="100" placeholder="Task or mission" aria-label="New task"><button class="control" id="add-task" type="button">ADD</button></div>
+   <div class="controls workshop-entry"><input id="task-date" class="control" type="date" aria-label="Task due date"><span class="small">OPTIONAL DUE DATE</span></div>
+   <div id="task-list" class="workshop-list"><div class="workshop-empty">No missions yet.</div></div>
+  </div>
+ </div>
+ <div class="small" id="workshop-status" aria-live="polite" style="margin-top:10px">WORKSHOP STORAGE // LOCAL ONLY</div>
+ <div class="controls" style="justify-content:flex-start;margin-top:10px">
+  <button class="control" type="button" data-info-url="https://earth.google.com/web/">GLOBAL MAP</button>
+  <button class="control" type="button" id="security-check">CHECK DASHBOARD SECURITY</button>
+ </div>
+ <div id="security-result" class="small" style="line-height:1.7;margin-top:8px">SECURITY MONITOR // READY</div>
 </section>
 <section class="panel" id="blueprint-panel" style="width:min(100%,610px);margin-top:14px;display:none"><h2>J.A.R.V.I.S // PROJECT BLUEPRINT</h2><div id="blueprint-content"></div></section><div class="chat">
 <div class="chat-head"><span>JARVIS COMMUNICATION LINK</span><div style="display:flex;align-items:center;gap:8px"><span id="connection">SECURE CHANNEL</span><button class="control" id="new-chat-button" type="button" style="padding:6px 9px">NEW SESSION</button></div></div>
