@@ -69,6 +69,27 @@ export default {
 			return env.ASSETS.fetch(request);
 		}
 
+		
+		if (url.pathname === "/api/sync") {
+			if (!env.DB) return jsonResponse({ error: "Encrypted sync database is not connected yet." }, 503);
+			const code = url.searchParams.get("code") || "";
+			if (!/^[A-Za-z0-9_-]{40,50}$/.test(code)) return jsonResponse({ error: "Invalid sync code." }, 400);
+			if (request.method === "GET") {
+				const row = await env.DB.prepare("SELECT payload, updated_at FROM jarvis_sync WHERE sync_code = ?1").bind(code).first<{ payload: string; updated_at: number }>();
+				return jsonResponse({ payload: row?.payload ?? null, updatedAt: row?.updated_at ?? null });
+			}
+			if (request.method === "PUT") {
+				const body = await request.json() as { payload?: unknown };
+				if (typeof body.payload !== "string" || body.payload.length > 900000) return jsonResponse({ error: "Encrypted backup is missing or too large." }, 413);
+				let parsed: unknown;
+				try { parsed = JSON.parse(body.payload); } catch { return jsonResponse({ error: "Invalid encrypted backup format." }, 400); }
+				if (!parsed || typeof parsed !== "object" || typeof (parsed as { iv?: unknown }).iv !== "string" || typeof (parsed as { data?: unknown }).data !== "string") return jsonResponse({ error: "Invalid encrypted backup format." }, 400);
+				await env.DB.prepare("INSERT INTO jarvis_sync (sync_code, payload, updated_at) VALUES (?1, ?2, ?3) ON CONFLICT(sync_code) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at").bind(code, body.payload, Date.now()).run();
+				return jsonResponse({ ok: true, updatedAt: Date.now() });
+			}
+			return jsonResponse({ error: "Method not allowed." }, 405);
+		}
+
 		// API Routes
 		if (url.pathname === "/api/chat") {
 			// Handle POST requests for chat
@@ -178,4 +199,8 @@ async function handleChatRequest(
 			},
 		);
 	}
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+	return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 }
