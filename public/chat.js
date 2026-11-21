@@ -562,7 +562,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkDueRe
 // Export a local backup containing sessions, projects, and tasks.
 document.getElementById("export-backup")?.addEventListener("click",()=>{
  try{
-  const backup={format:"jarvis-backup-v1",createdAt:new Date().toISOString(),sessions:savedSessions,workshop:workshopData};
+  const backup={format:"jarvis-backup-v1",createdAt:new Date().toISOString(),sessions:savedSessions,workshop:workshopData,plumbing:plumbingData};
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const link=document.createElement("a");link.href=url;link.download="jarvis-backup-"+new Date().toISOString().slice(0,10)+".json";
@@ -613,7 +613,18 @@ backupFile?.addEventListener("change",async()=>{
   projects.filter(p=>p&&typeof p.name==="string").slice(0,100).forEach(p=>{if(!projectIds.has(p.id))workshopData.projects.push({id:String(p.id||("import-"+Date.now()+"-"+Math.random())),name:p.name.slice(0,100),createdAt:Number(p.createdAt)||Date.now()});});
   const taskIds=new Set(workshopData.tasks.map(t=>t.id));
   tasks.filter(t=>t&&typeof t.name==="string").slice(0,200).forEach(t=>{if(!taskIds.has(t.id))workshopData.tasks.push({id:String(t.id||("import-"+Date.now()+"-"+Math.random())),name:t.name.slice(0,150),due:typeof t.due==="string"?t.due:"",done:!!t.done,createdAt:Number(t.createdAt)||Date.now()});});
-  saveChatHistory();saveWorkshop();renderSessionHistory();renderWorkshop();
+  const importedPlumbing=data.plumbing&&typeof data.plumbing==="object"?data.plumbing:{};
+  const knownCustomerIds=new Set(plumbingData.customers.map(c=>c.id));
+  (Array.isArray(importedPlumbing.customers)?importedPlumbing.customers:[]).filter(c=>c&&typeof c.name==="string").slice(0,300).forEach(c=>{
+   const id=String(c.id||("import-customer-"+Date.now()+"-"+Math.random()));
+   if(!knownCustomerIds.has(id)){plumbingData.customers.push({id,name:c.name.slice(0,90),phone:typeof c.phone==="string"?c.phone.slice(0,35):"",address:typeof c.address==="string"?c.address.slice(0,160):"",createdAt:Number(c.createdAt)||Date.now()});knownCustomerIds.add(id);}
+  });
+  const knownJobIds=new Set(plumbingData.jobs.map(j=>j.id));
+  (Array.isArray(importedPlumbing.jobs)?importedPlumbing.jobs:[]).filter(j=>j&&typeof j.title==="string"&&typeof j.customer==="string").slice(0,500).forEach(j=>{
+   const id=String(j.id||("import-job-"+Date.now()+"-"+Math.random()));
+   if(!knownJobIds.has(id)){const statuses=["Enquiry","Quote needed","Booked","In progress","Completed","Invoiced"];plumbingData.jobs.push({id,title:j.title.slice(0,100),customer:j.customer.slice(0,90),date:typeof j.date==="string"?j.date:"",status:statuses.includes(j.status)?j.status:"Enquiry",createdAt:Number(j.createdAt)||Date.now()});knownJobIds.add(id);}
+  });
+  saveChatHistory();saveWorkshop();savePlumbingData();renderSessionHistory();renderWorkshop();renderPlumbingBusiness();
   updateReminderStatus("BACKUP IMPORTED // MERGED WITHOUT REPLACING CURRENT DATA. REOPEN A SESSION FROM HISTORY.");
  }catch(error){updateReminderStatus("BACKUP IMPORT FAILED: "+(error.message||"INVALID FILE"));}
 });
