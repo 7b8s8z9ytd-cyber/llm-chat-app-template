@@ -38,6 +38,7 @@ function saveChatHistory(){
   savedSessions.sort((a,b)=>b.updatedAt-a.updatedAt);savedSessions=savedSessions.slice(0,50);
   localStorage.setItem(SESSIONS_STORAGE_KEY,JSON.stringify(savedSessions));localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(chatHistory.slice(-24)));
   const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // "+savedSessions.length+" SAVED";
+  scheduleCloudSync();
  }catch(error){const status=document.getElementById("memory-status");if(status)status.textContent="SESSION MEMORY // STORAGE UNAVAILABLE";}
 }
 let isProcessing=false;
@@ -460,7 +461,7 @@ try{
  }
 }catch(error){workshopStatus.textContent="LOCAL STORAGE COULD NOT BE READ";}
 function saveWorkshop(){
- try{localStorage.setItem(WORKSHOP_KEY,JSON.stringify(workshopData));if(workshopStatus)workshopStatus.textContent="SAVED LOCALLY // "+workshopData.projects.length+" PROJECTS // "+workshopData.tasks.length+" TASKS";}
+ try{localStorage.setItem(WORKSHOP_KEY,JSON.stringify(workshopData));if(workshopStatus)workshopStatus.textContent="SAVED LOCALLY // "+workshopData.projects.length+" PROJECTS // "+workshopData.tasks.length+" TASKS";scheduleCloudSync();}
  catch(error){if(workshopStatus)workshopStatus.textContent="STORAGE FULL OR UNAVAILABLE — EXPORT YOUR NOTES BEFORE CLEARING BROWSER DATA";}
 }
 function renderWorkshopList(container,items,type){
@@ -631,6 +632,105 @@ backupFile?.addEventListener("change",async()=>{
 
 
 // PLUMBING BUSINESS MODE // customer and job records kept separately from chat history.
+
+/* Encrypted personal-device sync. Plumbing customer/job data is deliberately excluded. */
+const SYNC_CODE_KEY = "jarvis-sync-code-v1";
+const syncCodeInput = document.getElementById("sync-code");
+const syncPassInput = document.getElementById("sync-passphrase");
+const syncStatus = document.getElementById("sync-status");
+let syncInProgress = false;
+let syncTimer = null;
+if (syncCodeInput) syncCodeInput.value = localStorage.getItem(SYNC_CODE_KEY) || "";
+function setSyncStatus(message) { if (syncStatus) syncStatus.textContent = "DEVICE SYNC // " + message; }
+function randomSyncCode() {
+ const bytes = crypto.getRandomValues(new Uint8Array(32));
+ return btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function bytesToBase64(bytes) { let binary=""; bytes.forEach(b=>binary+=String.fromCharCode(b)); return btoa(binary); }
+function base64ToBytes(value) { return Uint8Array.from(atob(value),c=>c.charCodeAt(0)); }
+async function syncCryptoKey(code, passphrase) {
+ const material = await crypto.subtle.importKey("raw",new TextEncoder().encode(passphrase),"PBKDF2",false,["deriveKey"]);
+ return crypto.subtle.deriveKey({name:"PBKDF2",salt:new TextEncoder().encode("JARVIS-device-sync-v1:"+code),iterations:310000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+}
+async function encryptSyncSnapshot(snapshot, code, passphrase) {
+ const key=await syncCryptoKey(code,passphrase),iv=crypto.getRandomValues(new Uint8Array(12));
+ const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(snapshot)));
+ return JSON.stringify({iv:bytesToBase64(iv),data:bytesToBase64(new Uint8Array(encrypted))});
+}
+async function decryptSyncSnapshot(payload, code, passphrase) {
+ const envelope=JSON.parse(payload),key=await syncCryptoKey(code,passphrase);
+ const clear=await crypto.subtle.decrypt({name:"AES-GCM",iv:base64ToBytes(envelope.iv)},key,base64ToBytes(envelope.data));
+ return JSON.parse(new TextDecoder().decode(clear));
+}
+function currentSyncSnapshot() {
+ return {version:1,savedAt:Date.now(),sessions:savedSessions,workshop:workshopData};
+}
+function mergeById(localItems, remoteItems) {
+ const map=new Map();
+ [...(Array.isArray(remoteItems)?remoteItems:[]),...(Array.isArray(localItems)?localItems:[])].forEach(item=>{
+  if(!item||typeof item.id!=="string")return;
+  const old=map.get(item.id),time=x=>Number(x.updatedAt||x.createdAt||0);
+  if(!old||time(item)>=time(old))map.set(item.id,item);
+ });
+ return [...map.values()].sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));
+}
+async function syncNow() {
+ if(syncInProgress)return;
+ const code=(syncCodeInput?.value||localStorage.getItem(SYNC_CODE_KEY)||"").trim();
+ const passphrase=syncPassInput?.value||"";
+ if(!/^[A-Za-z0-9_-]{40,50}$/.test(code)){setSyncStatus("GENERATE OR ENTER YOUR PRIVATE SYNC CODE.");return;}
+ if(passphrase.length<12){setSyncStatus("ENTER YOUR PASSPHRASE (AT LEAST 12 CHARACTERS).");return;}
+ if(!crypto.subtle){setSyncStatus("THIS BROWSER DOES NOT SUPPORT SECURE ENCRYPTION.");return;}
+ syncInProgress=true;setSyncStatus("ENCRYPTING AND CONNECTING...");
+ try {
+  localStorage.setItem(SYNC_CODE_KEY,code);
+  const key=encodeURIComponent(code);
+  const get=await fetch("/api/sync?code="+key,{cache:"no-store"});
+  const remote=await get.json();
+  if(!get.ok)throw new Error(remote.error||"Cloud sync is unavailable.");
+  if(remote.payload){
+   const decoded=await decryptSyncSnapshot(remote.payload,code,passphrase);
+   if(decoded.version!==1)throw new Error("This sync backup uses an unsupported version.");
+   savedSessions=mergeById(savedSessions,decoded.sessions).slice(0,50);
+   if(savedSessions.length&&!savedSessions.some(s=>s.id===activeSessionId))activeSessionId=savedSessions[0].id;
+   const active=savedSessions.find(s=>s.id===activeSessionId);
+   if(active){chatHistory=active.messages.slice(-24);chatMessages.replaceChildren();chatHistory.forEach(m=>addMessage(m.role,m.content));}
+   const remoteWorkshop=decoded.workshop||{};
+   workshopData.projects=mergeById(workshopData.projects,remoteWorkshop.projects).slice(0,100);
+   workshopData.tasks=mergeById(workshopData.tasks,remoteWorkshop.tasks).slice(0,200);
+   localStorage.setItem(SESSIONS_STORAGE_KEY,JSON.stringify(savedSessions));
+   localStorage.setItem(CHAT_STORAGE_KEY,JSON.stringify(chatHistory.slice(-24)));
+   localStorage.setItem(WORKSHOP_KEY,JSON.stringify(workshopData));
+   renderSessionHistory();renderWorkshop();
+  }
+  const encrypted=await encryptSyncSnapshot(currentSyncSnapshot(),code,passphrase);
+  const put=await fetch("/api/sync?code="+key,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({payload:encrypted})});
+  const result=await put.json();
+  if(!put.ok)throw new Error(result.error||"Could not save encrypted sync data.");
+  setSyncStatus("SYNC COMPLETE // PERSONAL CHATS AND WORKSHOP NOTES UPDATED.");
+ } catch(error) {
+  setSyncStatus(error.message==="The operation failed for an operation-specific reason"? "DECRYPTION FAILED — CHECK THAT BOTH DEVICES USE THE SAME CODE AND PASSPHRASE.":String(error.message||error).slice(0,150));
+ } finally {syncInProgress=false;}
+}
+function scheduleCloudSync() {
+ if(!localStorage.getItem(SYNC_CODE_KEY)||syncInProgress)return;
+ clearTimeout(syncTimer);
+ syncTimer=setTimeout(()=>{if(syncPassInput?.value)syncNow();else setSyncStatus("CHANGES SAVED ON THIS DEVICE. ENTER PASSPHRASE AND TAP SYNC NOW TO UPLOAD.");},1800);
+}
+document.getElementById("sync-generate")?.addEventListener("click",()=>{
+ const code=randomSyncCode();syncCodeInput.value=code;localStorage.setItem(SYNC_CODE_KEY,code);
+ setSyncStatus("CODE CREATED. COPY IT AND KEEP IT PRIVATE; USE THE SAME CODE AND PASSPHRASE ON YOUR OTHER DEVICE.");
+});
+document.getElementById("sync-copy")?.addEventListener("click",async()=>{
+ try{await navigator.clipboard.writeText(syncCodeInput.value);setSyncStatus("PRIVATE CODE COPIED. KEEP IT SECRET.");}
+ catch(error){setSyncStatus("COPY BLOCKED BY BROWSER. SELECT AND COPY THE CODE MANUALLY.");}
+});
+document.getElementById("sync-connect")?.addEventListener("click",syncNow);
+document.getElementById("sync-disconnect")?.addEventListener("click",()=>{
+ localStorage.removeItem(SYNC_CODE_KEY);if(syncCodeInput)syncCodeInput.value="";if(syncPassInput)syncPassInput.value="";
+ setSyncStatus("DISCONNECTED. CLOUD COPY IS NOT DELETED.");
+});
+
 const BUSINESS_STORAGE_KEY="jarvis-plumbing-business-v1";
 const businessStatus=document.getElementById("biz-status");
 let plumbingData={customers:[],jobs:[]};
