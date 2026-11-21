@@ -516,3 +516,72 @@ function updateConceptModel(){
 modelShape?.addEventListener("change",updateConceptModel);
 modelRotation?.addEventListener("input",updateConceptModel);
 updateConceptModel();
+
+
+// JARVIS planner reminders, portable backup, and install prompt.
+const plannerStatus=document.getElementById("planner-status");
+const reminderButton=document.getElementById("enable-reminders");
+let remindersEnabled=false;
+const notifiedDueTasks=new Set();
+function updateReminderStatus(message){
+ if(plannerStatus)plannerStatus.textContent=message;
+}
+function checkDueReminders(){
+ if(!remindersEnabled||!("Notification" in window)||Notification.permission!=="granted")return;
+ const now=Date.now();
+ workshopData.tasks.forEach(task=>{
+  if(task.done||!task.due)return;
+  const due=Date.parse(task.due);
+  if(!Number.isFinite(due)||due>now||notifiedDueTasks.has(task.id))return;
+  notifiedDueTasks.add(task.id);
+  try{new Notification("J.A.R.V.I.S reminder",{body:task.name+" is due now."});}
+  catch(error){updateReminderStatus("REMINDER DISPLAY UNAVAILABLE IN THIS BROWSER.");}
+ });
+}
+if(reminderButton){
+ reminderButton.addEventListener("click",async()=>{
+  if(!("Notification" in window)){updateReminderStatus("THIS BROWSER DOES NOT SUPPORT SYSTEM NOTIFICATIONS.");return;}
+  if(!window.isSecureContext){updateReminderStatus("REMINDERS REQUIRE A SECURE HTTPS CONNECTION.");return;}
+  let permission=Notification.permission;
+  if(permission!=="granted")permission=await Notification.requestPermission();
+  if(permission==="granted"){
+   remindersEnabled=true;
+   reminderButton.textContent="REMINDERS: ON";
+   reminderButton.classList.add("active");
+   updateReminderStatus("REMINDERS ON // CHECKED WHILE JARVIS IS OPEN. MOBILE/BACKGROUND DELIVERY IS NOT GUARANTEED.");
+   checkDueReminders();
+  }else updateReminderStatus("NOTIFICATION PERMISSION NOT GRANTED. YOU CAN STILL USE THE TASK LIST.");
+ });
+}
+setInterval(checkDueReminders,30000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkDueReminders();});
+
+// Export a local backup containing sessions, projects, and tasks.
+document.getElementById("export-backup")?.addEventListener("click",()=>{
+ try{
+  const backup={format:"jarvis-backup-v1",createdAt:new Date().toISOString(),sessions:savedSessions,workshop:workshopData};
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");link.href=url;link.download="jarvis-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  updateReminderStatus("BACKUP EXPORTED // KEEP THE FILE SOMEWHERE SAFE.");
+ }catch(error){updateReminderStatus("BACKUP EXPORT FAILED: "+error.message);}
+});
+
+// Offer installation only when Chrome provides the PWA install event.
+let pendingInstallPrompt=null;
+const installButton=document.getElementById("install-app");
+window.addEventListener("beforeinstallprompt",event=>{
+ event.preventDefault();pendingInstallPrompt=event;
+ if(installButton)installButton.hidden=false;
+});
+if(installButton)installButton.addEventListener("click",async()=>{
+ if(!pendingInstallPrompt)return;
+ pendingInstallPrompt.prompt();
+ await pendingInstallPrompt.userChoice;
+ pendingInstallPrompt=null;installButton.hidden=true;
+});
+window.addEventListener("appinstalled",()=>{
+ if(installButton)installButton.hidden=true;
+ updateReminderStatus("JARVIS APP INSTALLED.");
+});
