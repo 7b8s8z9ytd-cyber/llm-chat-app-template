@@ -70,6 +70,25 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
 .workshop-empty{font-size:11px;color:#6babc5;line-height:1.6}
 @media(max-width:560px){.workshop-grid{grid-template-columns:1fr}}
 
+
+.designer-controls{display:grid;grid-template-columns:100px 1fr;align-items:center;gap:9px;margin-top:12px}
+.designer-controls select{width:100%;text-align:left}
+.designer-controls input{width:100%;accent-color:#52eaff}
+.model-stage{height:245px;margin:12px 0;display:grid;place-items:center;perspective:700px;overflow:hidden;background:radial-gradient(ellipse,rgba(16,115,157,.22),transparent 70%);border:1px solid rgba(69,220,255,.16)}
+.concept-model{--w:100px;--h:100px;--d:100px;position:relative;width:var(--w);height:var(--h);transform-style:preserve-3d;transform:rotateX(-20deg) rotateY(28deg);transition:transform .12s ease}
+.model-face{position:absolute;display:grid;place-items:center;border:1px solid #80f2ff;background:rgba(14,139,190,.23);box-shadow:inset 0 0 24px rgba(67,221,255,.12),0 0 12px rgba(43,211,255,.14);color:#baf7ff;font-size:9px;letter-spacing:2px;backface-visibility:visible}
+.model-face.front,.model-face.back{width:var(--w);height:var(--h)}
+.model-face.front{transform:translateZ(calc(var(--d)/2))}
+.model-face.back{transform:rotateY(180deg) translateZ(calc(var(--d)/2))}
+.model-face.right,.model-face.left{width:var(--d);height:var(--h);left:calc((var(--w) - var(--d))/2)}
+.model-face.right{transform:rotateY(90deg) translateZ(calc(var(--w)/2))}
+.model-face.left{transform:rotateY(-90deg) translateZ(calc(var(--w)/2))}
+.model-face.top,.model-face.bottom{width:var(--w);height:var(--d);top:calc((var(--h) - var(--d))/2)}
+.model-face.top{transform:rotateX(90deg) translateZ(calc(var(--h)/2))}
+.model-face.bottom{transform:rotateX(-90deg) translateZ(calc(var(--h)/2))}
+.concept-model.tower{--w:75px;--h:150px;--d:75px}
+.concept-model.wide{--w:155px;--h:75px;--d:90px}
+
 </style>
 </head>
 <body>
@@ -116,6 +135,20 @@ footer{font-size:9px;color:#438ba9;letter-spacing:2px;margin-top:12px;text-align
   <button class="control" type="button" data-info-url="https://www.bbc.com/sport">SPORT</button>
  </div>
  <div class="small" style="margin-top:8px">Weather is retrieved when requested. News and sports links open their websites; JARVIS does not claim to have read them automatically.</div>
+</section>
+<section class="panel" id="designer-panel" style="width:min(100%,610px);margin-top:14px">
+ <h2>3D CONCEPT DESIGNER // PREVIEW</h2>
+ <div class="small">INTERACTIVE CONCEPT MODEL — NOT A MANUFACTURING CAD FILE</div>
+ <div class="designer-controls">
+  <label class="small" for="model-shape">MODEL FORM</label>
+  <select id="model-shape" class="control"><option value="cube">CUBE</option><option value="tower">TOWER</option><option value="wide">WIDE MODULE</option></select>
+  <label class="small" for="model-rotation">ROTATE MODEL</label>
+  <input id="model-rotation" type="range" min="0" max="360" value="28" aria-label="Rotate 3D model">
+ </div>
+ <div class="model-stage"><div id="concept-model" class="concept-model cube">
+  <div class="model-face front">FRONT</div><div class="model-face back">BACK</div><div class="model-face right">RIGHT</div><div class="model-face left">LEFT</div><div class="model-face top">TOP</div><div class="model-face bottom">BASE</div>
+ </div></div>
+ <div class="small" id="model-caption" style="text-align:center">CUBE // ROTATABLE CONCEPT VIEW</div>
 </section>
 <section class="panel" id="workshop-panel" style="width:min(100%,610px);margin-top:14px">
  <h2>PROJECT WORKSHOP // MISSION CONTROL</h2>
