@@ -438,3 +438,65 @@ document.querySelectorAll("[data-info-url]").forEach(button=>button.addEventList
  const url=button.getAttribute("data-info-url");
  if(url)window.open(url,"_blank","noopener,noreferrer");
 }));
+
+
+/* JARVIS 3.0 project workshop and mission control — local browser storage */
+const WORKSHOP_KEY="jarvis-workshop-v1";
+const projectList=document.getElementById("project-list");
+const taskList=document.getElementById("task-list");
+const projectNameInput=document.getElementById("project-name");
+const taskNameInput=document.getElementById("task-name");
+const taskDateInput=document.getElementById("task-date");
+const workshopStatus=document.getElementById("workshop-status");
+let workshopData={projects:[],tasks:[]};
+try{
+ const saved=JSON.parse(localStorage.getItem(WORKSHOP_KEY)||"null");
+ if(saved&&typeof saved==="object"){
+  workshopData.projects=Array.isArray(saved.projects)?saved.projects.slice(0,100):[];
+  workshopData.tasks=Array.isArray(saved.tasks)?saved.tasks.slice(0,200):[];
+ }
+}catch(error){workshopStatus.textContent="LOCAL STORAGE COULD NOT BE READ";}
+function saveWorkshop(){
+ try{localStorage.setItem(WORKSHOP_KEY,JSON.stringify(workshopData));if(workshopStatus)workshopStatus.textContent="SAVED LOCALLY // "+workshopData.projects.length+" PROJECTS // "+workshopData.tasks.length+" TASKS";}
+ catch(error){if(workshopStatus)workshopStatus.textContent="STORAGE FULL OR UNAVAILABLE — EXPORT YOUR NOTES BEFORE CLEARING BROWSER DATA";}
+}
+function renderWorkshopList(container,items,type){
+ if(!container)return;
+ container.replaceChildren();
+ if(!items.length){const empty=document.createElement("div");empty.className="workshop-empty";empty.textContent=type==="project"?"No projects yet. Add your first project above.":"No missions yet. Add a task above.";container.appendChild(empty);return;}
+ items.forEach(item=>{
+  const row=document.createElement("div");row.className="workshop-item"+(item.done?" done":"");
+  if(type==="task"){
+   const check=document.createElement("input");check.type="checkbox";check.checked=!!item.done;check.setAttribute("aria-label","Mark task complete");check.addEventListener("change",()=>{item.done=check.checked;saveWorkshop();renderWorkshop();});row.appendChild(check);
+  }
+  const label=document.createElement("span");label.textContent=item.name+(item.due?" · due "+item.due:"");row.appendChild(label);
+  const remove=document.createElement("button");remove.type="button";remove.textContent="REMOVE";remove.addEventListener("click",()=>{if(type==="project")workshopData.projects=workshopData.projects.filter(x=>x.id!==item.id);else workshopData.tasks=workshopData.tasks.filter(x=>x.id!==item.id);saveWorkshop();renderWorkshop();});row.appendChild(remove);
+  container.appendChild(row);
+ });
+}
+function renderWorkshop(){renderWorkshopList(projectList,workshopData.projects,"project");renderWorkshopList(taskList,workshopData.tasks,"task");}
+function addWorkshopItem(type){
+ const input=type==="project"?projectNameInput:taskNameInput;
+ const name=input?.value.trim();
+ if(!name)return;
+ if(type==="project")workshopData.projects.unshift({id:Date.now()+"-"+Math.random().toString(36).slice(2),name:name,createdAt:Date.now()});
+ else workshopData.tasks.unshift({id:Date.now()+"-"+Math.random().toString(36).slice(2),name:name,due:taskDateInput?.value||"",done:false,createdAt:Date.now()});
+ input.value="";saveWorkshop();renderWorkshop();
+}
+document.getElementById("add-project")?.addEventListener("click",()=>addWorkshopItem("project"));
+document.getElementById("add-task")?.addEventListener("click",()=>addWorkshopItem("task"));
+projectNameInput?.addEventListener("keydown",e=>{if(e.key==="Enter")addWorkshopItem("project");});
+taskNameInput?.addEventListener("keydown",e=>{if(e.key==="Enter")addWorkshopItem("task");});
+renderWorkshop();
+document.getElementById("security-check")?.addEventListener("click",()=>{
+ const result=document.getElementById("security-result");
+ if(!result)return;
+ const checks=[
+  "HTTPS CONNECTION: "+(location.protocol==="https:"?"SECURE":"NOT SECURE"),
+  "PAGE CONTEXT: "+(window.isSecureContext?"SECURE CONTEXT":"LIMITED CONTEXT"),
+  "LOCAL STORAGE: "+(function(){try{const k="jarvis-security-test";localStorage.setItem(k,"ok");localStorage.removeItem(k);return "AVAILABLE";}catch(e){return "UNAVAILABLE";}})(),
+  "MICROPHONE: "+(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?"BROWSER API AVAILABLE — PERMISSION REQUIRED":"API UNAVAILABLE"),
+  "EXTERNAL CONTROL: NOT ENABLED — NO OTHER TABS OR ACCOUNTS ARE CONTROLLED"
+ ];
+ result.textContent=checks.join(" // ");
+});
