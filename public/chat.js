@@ -255,7 +255,35 @@ function handleBrowserCommand(command,originalMessage){
  return true;
 }
 
-async function sendMessage(){
+function renderBlueprintFromResponse(responseText,responseEl){
+ const match=responseText.match(/BLUEPRINT_START\s*([\s\S]*?)\s*BLUEPRINT_END/);
+ if(!match)return false;
+ let data;try{data=JSON.parse(match[1]);}catch(error){console.warn("Invalid blueprint JSON",error);return false;}
+ if(!data||typeof data.title!=="string"||!Array.isArray(data.views))return false;
+ const panel=document.getElementById("blueprint-panel"),content=document.getElementById("blueprint-content");
+ if(!panel||!content)return false;
+ content.replaceChildren();
+ const heading=document.createElement("h3");heading.textContent=data.title;heading.style.cssText="color:#baf7ff;font-size:15px;letter-spacing:1px";content.appendChild(heading);
+ if(data.summary){const p=document.createElement("p");p.textContent=data.summary;p.style.cssText="font-size:12px;line-height:1.5;color:#9dd9ed";content.appendChild(p);}
+ data.views.slice(0,3).forEach(view=>{
+  const title=document.createElement("div");title.textContent=String(view.name||"Design view");title.style.cssText="font-size:10px;letter-spacing:2px;color:#52eaff;margin:12px 0 6px";content.appendChild(title);
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 1000 700");svg.setAttribute("role","img");svg.setAttribute("aria-label",String(view.name||"Project blueprint"));svg.style.cssText="width:100%;height:auto;background-color:#031326;border:1px solid rgba(82,234,255,.35);background-image:linear-gradient(rgba(22,72,106,.45) 1px,transparent 1px),linear-gradient(90deg,rgba(22,72,106,.45) 1px,transparent 1px);background-size:40px 40px";
+  (Array.isArray(view.elements)?view.elements:[]).slice(0,100).forEach(el=>{
+   let node;const ns=svg.namespaceURI;
+   if(el.type==="rect"){node=document.createElementNS(ns,"rect");["x","y","width","height"].forEach(k=>node.setAttribute(k,String(Number(el[k])||0)));node.setAttribute("fill","none");}
+   else if(el.type==="line"){node=document.createElementNS(ns,"line");["x1","y1","x2","y2"].forEach(k=>node.setAttribute(k,String(Number(el[k])||0)));}
+   else if(el.type==="circle"){node=document.createElementNS(ns,"circle");["cx","cy","r"].forEach(k=>node.setAttribute(k,String(Number(el[k])||0)));node.setAttribute("fill","none");}
+   else if(el.type==="text"){node=document.createElementNS(ns,"text");node.setAttribute("x",String(Number(el.x)||0));node.setAttribute("y",String(Number(el.y)||0));node.setAttribute("font-size","20");}
+   if(node){node.setAttribute("stroke","#6deaff");node.setAttribute("stroke-width","3");node.setAttribute("vector-effect","non-scaling-stroke");if(el.type==="text"){node.setAttribute("fill","#baf7ff");node.textContent=String(el.label||"").slice(0,80);}else if(el.label){const label=document.createElementNS(ns,"text");label.setAttribute("x",String(Number(el.x??el.cx??el.x1)||0));label.setAttribute("y",String((Number(el.y??el.cy??el.y1)||0)-10));label.setAttribute("fill","#baf7ff");label.setAttribute("font-size","18");label.textContent=String(el.label).slice(0,80);svg.appendChild(label);}svg.appendChild(node);}
+  });
+  content.appendChild(svg);
+ });
+ const addList=(headingText,items)=>{if(!Array.isArray(items)||!items.length)return;const h=document.createElement("h4");h.textContent=headingText;h.style.cssText="color:#52eaff;font-size:10px;letter-spacing:2px;margin:14px 0 6px";content.appendChild(h);const ul=document.createElement("ul");ul.style.cssText="font-size:12px;line-height:1.6;color:#b7e9f5;padding-left:20px";items.slice(0,20).forEach(item=>{const li=document.createElement("li");li.textContent=typeof item==="string"?item:String(item.name||"Part")+(item.quantity?" — "+item.quantity:"");ul.appendChild(li);});content.appendChild(ul);};
+ addList("MATERIALS",data.materials);addList("ASSEMBLY / PROJECT STAGES",data.steps);addList("SAFETY NOTES",data.safety);
+ responseEl.textContent="Blueprint generated below. Review the design, approximate dimensions and safety notes before building.";
+ panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"nearest"});return true;
+}
+\nasync function sendMessage(){
  const message=userInput.value.trim();
  if(!message||isProcessing)return;
  const browserCommand=parseBrowserCommand(message);
@@ -292,7 +320,7 @@ async function sendMessage(){
     }catch(err){console.warn("Skipping unrecognised response chunk",err);}
    }
   }
-  if(!responseText)throw new Error("The AI returned an empty response");
+  if(!responseText)throw new Error("The AI returned an empty response");\n  renderBlueprintFromResponse(responseText,responseEl);
   chatHistory.push({role:"assistant",content:responseText});while(chatHistory.length>24)chatHistory.splice(0,1);saveChatHistory();speak(responseText);
   coreStatus.textContent="RESPONSE COMPLETE";aiStatus.textContent="AI CORE READY";
  }catch(error){
